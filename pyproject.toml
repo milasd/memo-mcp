@@ -1,0 +1,17 @@
+[project]
+name = "memo-mcp"
+version = "0.1.0"
+description = "Memo MCP"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [ "mcp>=1.9.2",]
+[[project.authors]]
+name = "milasd"
+email = "milasoaresdeoliveira@gmail.com"
+
+[build-system]
+requires = [ "hatchling",]
+build-backend = "hatchling.build"
+
+[project.scripts]
+memo-mcp = "memo_mcp:main"
