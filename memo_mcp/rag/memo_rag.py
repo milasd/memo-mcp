@@ -7,7 +7,7 @@ from memo_mcp.rag.vectors.vector_store import VectorStore
 from memo_mcp.rag.document.indexer import DocumentIndexer
 from memo_mcp.rag.document.retriever import DocumentRetriever
 from memo_mcp.rag.config import RAGConfig
-from memo_mcp.rag.utils.logging_setup import set_logger
+from ..utils.logging_setup import set_logger
 
 
 class MemoRAG:
