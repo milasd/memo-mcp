@@ -9,5 +9,7 @@ wheels/
 # Virtual environments
 .venv
 
+# Where vectors etc. are stored
+index
 # Memo data
-memo
+data/memo
