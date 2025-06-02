@@ -7,7 +7,7 @@ from memo_mcp.rag.vectors.vector_store import VectorStore
 from memo_mcp.rag.document.indexer import DocumentIndexer
 from memo_mcp.rag.document.retriever import DocumentRetriever
 from memo_mcp.rag.config import RAGConfig
-from memo_mcp.rag.app_logging import setup_logging
+from memo_mcp.rag.utils.logging_setup import set_logger
 
 
 class MemoRAG:
@@ -21,7 +21,7 @@ class MemoRAG:
     def __init__(self, config: Optional[RAGConfig] = None):
         """Initialize the RAG system with configuration."""
         self.config = config or RAGConfig()
-        self.logger = setup_logging(self.config.log_level)
+        self.logger = set_logger(self.config.log_level)
         
         # Initialize components
         self.embedding_manager = EmbeddingManager(self.config)

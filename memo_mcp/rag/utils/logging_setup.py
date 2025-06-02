@@ -1,7 +1,6 @@
 import logging
-from typing import Optional
 
-def setup_logging(log_level: int = logging.INFO, name: str = "memo_rag") -> logging.Logger:
+def set_logger(log_level: int = logging.INFO, name: str = "memo_rag") -> logging.Logger:
     """
     Setup logging configuration for the Memo RAG system.
 
