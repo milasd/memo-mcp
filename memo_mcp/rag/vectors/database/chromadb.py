@@ -76,9 +76,16 @@ class ChromaBackend(VectorDatabase):
             ids=ids
         )
         
+        # Ensure data is persisted (ChromaDB should auto-persist with PersistentClient)
+        try:
+            self.client.persist()
+        except AttributeError:
+            # persist() method may not be available in all ChromaDB versions
+            pass
+        
         self.logger.debug(f"Added {len(embeddings)} documents to ChromaDB")
     
-    async def search(
+    def search(
         self, 
         query_embedding: np.ndarray, 
         top_k: int,
@@ -137,7 +144,7 @@ class ChromaBackend(VectorDatabase):
         self.collection.delete(ids=results["ids"])
         return True
     
-    async def get_document_count(self) -> int:
+    def get_document_count(self) -> int:
         """Get number of unique documents."""
         # This is approximate since we need to query all metadata
         all_results = self.collection.get()
@@ -147,11 +154,11 @@ class ChromaBackend(VectorDatabase):
         unique_files = set(meta["file_path"] for meta in all_results["metadatas"])
         return len(unique_files)
     
-    async def get_chunk_count(self) -> int:
+    def get_chunk_count(self) -> int:
         """Get total number of chunks."""
         return self.collection.count()
     
-    async def is_empty(self) -> bool:
+    def is_empty(self) -> bool:
         """Check if collection is empty."""
         return self.collection.count() == 0
     
@@ -173,12 +180,12 @@ class ChromaBackend(VectorDatabase):
             self.client = None
             self.logger.info("ChromaDB client explicitly cleared.")
     
-    async def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> Dict[str, Any]:
         """Perform ChromaDB-specific health check."""
         try:
             # Test basic connectivity
             count = self.collection.count()
-            doc_count = await self.get_document_count()
+            doc_count = self.get_document_count()
             
             return {
                 "status": "healthy",

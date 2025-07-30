@@ -1,9 +1,3 @@
-"""
-Embeddings Manager for Memo RAG System
-
-Handles text embedding generation with GPU acceleration support.
-"""
-
 import logging
 import pickle
 import hashlib
@@ -35,7 +29,7 @@ class EmbeddingManager:
         self._cache: Dict[str, np.ndarray] = {}
         self._cache_dirty = False
         
-    async def initialize(self) -> None:
+    def initialize(self) -> None:
         """Initialize the embedding model and determine device."""
         self.logger.info(f"Initializing embedding model: {self.model_name}")
         
@@ -45,12 +39,12 @@ class EmbeddingManager:
         
         # Load model based on type
         if "sentence-transformers" in self.model_name:
-            await self._load_sentence_transformer()
+            self._load_sentence_transformer()
         else:
-            await self._load_huggingface_model()
+            self._load_huggingface_model()
         
         # Load cache if it exists
-        await self._load_cache()
+        self._load_cache()
         
         self.logger.info("Embedding manager initialized successfully")
     
@@ -78,7 +72,7 @@ class EmbeddingManager:
         self.logger.info("Using CPU for embeddings")
         return "cpu"
     
-    async def _load_sentence_transformer(self) -> None:
+    def _load_sentence_transformer(self) -> None:
         """Load a sentence transformer model."""
         try:
             from sentence_transformers import SentenceTransformer
@@ -97,11 +91,10 @@ class EmbeddingManager:
                 "Install with: pip install sentence-transformers"
             )
     
-    async def _load_huggingface_model(self) -> None:
+    def _load_huggingface_model(self) -> None:
         """Load a HuggingFace transformers model."""
         try:
             from transformers import AutoTokenizer, AutoModel
-            import torch
             
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
             self.model = AutoModel.from_pretrained(self.model_name)
@@ -115,7 +108,7 @@ class EmbeddingManager:
                 "Install with: pip install transformers torch"
             )
     
-    async def _load_cache(self) -> None:
+    def _load_cache(self) -> None:
         """Load embedding cache from disk."""
         if not self.config.cache_embeddings:
             return
@@ -130,7 +123,7 @@ class EmbeddingManager:
                 self.logger.warning(f"Failed to load embedding cache: {e}")
                 self._cache = {}
     
-    async def _save_cache(self) -> None:
+    def _save_cache(self) -> None:
         """Save embedding cache to disk."""
         if not self.config.cache_embeddings or not self._cache_dirty:
             return
@@ -152,7 +145,7 @@ class EmbeddingManager:
         """Generate a cache key for text."""
         return hashlib.md5(f"{self.model_name}:{text}".encode()).hexdigest()
     
-    async def embed_text(self, text: str) -> np.ndarray:
+    def embed_text(self, text: str) -> np.ndarray:
         """
         Generate embedding for a single text.
         
@@ -172,10 +165,10 @@ class EmbeddingManager:
         
         # Generate embedding
         if hasattr(self.model, 'encode'):  # SentenceTransformer
-            embedding = await self._embed_with_sentence_transformer([text])
+            embedding = self._embed_with_sentence_transformer([text])
             embedding = embedding[0]
         else:  # HuggingFace model
-            embedding = await self._embed_with_huggingface([text])
+            embedding = self._embed_with_huggingface([text])
             embedding = embedding[0]
         
         # Cache the result
@@ -185,7 +178,7 @@ class EmbeddingManager:
         
         return embedding
     
-    async def embed_texts(self, texts: List[str]) -> List[np.ndarray]:
+    def embed_texts(self, texts: List[str]) -> List[np.ndarray]:
         """
         Generate embeddings for multiple texts efficiently.
         
@@ -218,9 +211,9 @@ class EmbeddingManager:
         # Generate embeddings for uncached texts
         if uncached_texts:
             if hasattr(self.model, 'encode'):  # SentenceTransformer
-                new_embeddings = await self._embed_with_sentence_transformer(uncached_texts)
+                new_embeddings = self._embed_with_sentence_transformer(uncached_texts)
             else:  # HuggingFace model
-                new_embeddings = await self._embed_with_huggingface(uncached_texts)
+                new_embeddings = self._embed_with_huggingface(uncached_texts)
             
             # Cache new embeddings
             if self.config.cache_embeddings:
@@ -236,7 +229,7 @@ class EmbeddingManager:
         # Return in original order
         return [cached_embeddings[i] for i in range(len(texts))]
     
-    async def _embed_with_sentence_transformer(self, texts: List[str]) -> List[np.ndarray]:
+    def _embed_with_sentence_transformer(self, texts: List[str]) -> List[np.ndarray]:
         """Generate embeddings using SentenceTransformer."""
         embeddings = self.model.encode(
             texts,
@@ -246,7 +239,7 @@ class EmbeddingManager:
         )
         return [emb.astype(np.float32) for emb in embeddings]
     
-    async def _embed_with_huggingface(self, texts: List[str]) -> List[np.ndarray]:
+    def _embed_with_huggingface(self, texts: List[str]) -> List[np.ndarray]:
         """Generate embeddings using HuggingFace transformers."""
         try:
             import torch
@@ -296,7 +289,7 @@ class EmbeddingManager:
     
     async def close(self) -> None:
         """Clean up resources and save cache."""
-        await self._save_cache()
+        self._save_cache()
         
         # Clear GPU memory if using CUDA
         if self.device and "cuda" in self.device:

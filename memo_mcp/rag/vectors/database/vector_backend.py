@@ -104,9 +104,9 @@ class VectorDatabase(ABC):
         Default implementation provides basic status.
         """
         try:
-            chunk_count = await self.get_chunk_count()
-            doc_count = await self.get_document_count()
-            is_empty = await self.is_empty()
+            chunk_count = self.get_chunk_count()
+            doc_count = self.get_document_count()
+            is_empty = self.is_empty()
             
             return {
                 "status": "healthy",
@@ -122,13 +122,13 @@ class VectorDatabase(ABC):
                 "error": str(e)
             }
     
-    async def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> Dict[str, Any]:
         """
         Get basic stats about the vector store, such as document count.
         """
         return {
-            "document_count": await self.get_document_count(),
-            "chunk_count": await self.get_chunk_count(),
-            "is_empty": await self.is_empty(),
+            "document_count": self.get_document_count(),
+            "chunk_count": self.get_chunk_count(),
+            "is_empty": self.is_empty(),
             "backend_type": self.__class__.__name__
         }

@@ -190,7 +190,7 @@ class DocumentIndexer:
                 return {"processed": False, "chunks": 0}
             
             # Read file content
-            content = await self._read_file_content(file_path)
+            content = self._read_file_content(file_path)
             if not content.strip():
                 self.logger.debug(f"Skipping empty file: {file_path}")
                 return {"processed": False, "chunks": 0}
@@ -204,7 +204,7 @@ class DocumentIndexer:
                 return {"processed": False, "chunks": 0}
             
             # Generate embeddings
-            embeddings = await self.embedding_manager.embed_texts(chunks)
+            embeddings = self.embedding_manager.embed_texts(chunks)
             
             # Create metadata for each chunk
             metadatas = []
@@ -230,7 +230,7 @@ class DocumentIndexer:
             self.logger.error(f"Failed to process file {file_path}: {e}")
             raise
     
-    async def _read_file_content(self, file_path: Path) -> str:
+    def _read_file_content(self, file_path: Path) -> str:
         """Read and preprocess file content."""
         try:
             with open(file_path, 'r', encoding=self.config.encoding, errors='ignore') as f:
@@ -606,7 +606,7 @@ class FileWatcher:
         self._running = True
         self.logger.info(f"Started watching {self.indexer.config.data_root}")
     
-    async def stop_watching(self) -> None:
+    def stop_watching(self) -> None:
         """Stop watching for file changes."""
         if self._observer and self._running:
             self._observer.stop()

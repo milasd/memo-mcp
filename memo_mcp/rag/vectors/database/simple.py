@@ -69,7 +69,7 @@ class SimpleBackend(VectorDatabase):
         await self._save_data()
         self.logger.debug(f"Added {len(embeddings)} documents to simple store")
     
-    async def search(
+    def search(
         self, 
         query_embedding: np.ndarray, 
         top_k: int,
@@ -124,16 +124,16 @@ class SimpleBackend(VectorDatabase):
         await self._save_data()
         return True
     
-    async def get_document_count(self) -> int:
+    def get_document_count(self) -> int:
         """Get number of unique documents."""
         unique_files = set(meta.file_path for meta in self.metadatas)
         return len(unique_files)
     
-    async def get_chunk_count(self) -> int:
+    def get_chunk_count(self) -> int:
         """Get total number of chunks."""
         return len(self.texts)
     
-    async def is_empty(self) -> bool:
+    def is_empty(self) -> bool:
         """Check if store is empty."""
         return len(self.texts) == 0
     
@@ -148,14 +148,14 @@ class SimpleBackend(VectorDatabase):
         """Close simple backend."""
         await self._save_data()
     
-    async def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> Dict[str, Any]:
         """Perform simple backend health check."""
         try:
             return {
                 "status": "healthy",
                 "backend_type": "SimpleBackend",
                 "chunk_count": len(self.texts),
-                "document_count": await self.get_document_count(),
+                "document_count": self.get_document_count(),
                 "is_empty": len(self.texts) == 0,
                 "storage_path": str(self.data_path),
                 "storage_exists": self.data_path.exists()

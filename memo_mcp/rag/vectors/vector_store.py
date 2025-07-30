@@ -11,7 +11,6 @@ class VectorStore:
     Vector storage interface with multiple backend implementations.
     
     Supports FAISS, Chroma, Qdrant, and simple in-memory storage.
-    Uses proper interface abstraction for consistent API.
     """
     
     def __init__(self, config: RAGConfig):
@@ -49,30 +48,30 @@ class VectorStore:
         """Add document embeddings to the store."""
         await self.backend.add_documents(embeddings, texts, metadatas)
     
-    async def search(
+    def search(
         self, 
         query_embedding: np.ndarray, 
         top_k: int,
         similarity_threshold: float = 0.0
     ) -> List[Dict[str, Any]]:
         """Search for similar documents."""
-        return await self.backend.search(query_embedding, top_k, similarity_threshold)
+        return self.backend.search(query_embedding, top_k, similarity_threshold)
     
     async def remove_document(self, file_path: str) -> bool:
         """Remove all chunks of a document."""
         return await self.backend.remove_document(file_path)
     
-    async def get_document_count(self) -> int:
+    def get_document_count(self) -> int:
         """Get the number of unique documents."""
-        return await self.backend.get_document_count()
+        return self.backend.get_document_count()
     
-    async def get_chunk_count(self) -> int:
+    def get_chunk_count(self) -> int:
         """Get the total number of chunks."""
-        return await self.backend.get_chunk_count()
+        return self.backend.get_chunk_count()
     
-    async def is_empty(self) -> bool:
+    def is_empty(self) -> bool:
         """Check if the vector store is empty."""
-        return await self.backend.is_empty()
+        return self.backend.is_empty()
     
     async def clear(self) -> None:
         """Clear all data from the vector store."""
@@ -83,13 +82,13 @@ class VectorStore:
         if self.backend:
             await self.backend.close()
     
-    async def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> Dict[str, Any]:
         """Perform a health check of the vector store."""
-        return await self.backend.health_check()
+        return self.backend.health_check()
     
-    async def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> Dict[str, Any]:
         """Get statistical information about the vector store."""
-        return await self.backend.get_stats()
+        return self.backend.get_stats()
     
     def get_backend(self) -> VectorDatabase:
         """
@@ -109,7 +108,6 @@ class VectorStore:
         return self.backend.__class__.__name__
 
 
-# Factory function for creating vector stores
 def create_vector_store(config: RAGConfig) -> VectorStore:
     """
     Factory function to create vector store instances.

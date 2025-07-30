@@ -1,3 +1,4 @@
+from logging import Logger
 from typing import List, Dict, Any, Optional, Tuple
 from pathlib import Path
 from datetime import date
@@ -18,10 +19,10 @@ class MemoRAG:
     for daily journal entries stored in hierarchical date structure.
     """
     
-    def __init__(self, config: Optional[RAGConfig] = None):
+    def __init__(self, config: Optional[RAGConfig] = None, logger: Optional[Logger] = None):
         """Initialize the RAG system with configuration."""
         self.config = config or RAGConfig()
-        self.logger = set_logger(self.config.log_level)
+        self.logger = logger or set_logger()
         
         # Initialize components
         self.embedding_manager = EmbeddingManager(self.config)
@@ -40,17 +41,11 @@ class MemoRAG:
         self.logger.info("Initializing Memo RAG system...")
         
         try:
-            # Initialize embedding manager (loads model, checks GPU)
-            await self.embedding_manager.initialize()
-            
-            # Initialize vector store
+            self.embedding_manager.initialize()
             await self.vector_store.initialize()
             
             self._initialized = True
             self.logger.info("Memo RAG system initialized successfully")
-            
-            # Note: We don't automatically build index here anymore
-            # User should call build_index() explicitly if needed
             
         except Exception as e:
             self.logger.error(f"Failed to initialize RAG system: {e}")
@@ -66,7 +61,6 @@ class MemoRAG:
         Returns:
             Dictionary with indexing statistics
         """
-        # Ensure system is initialized first
         if not self._initialized:
             await self.initialize()
             
@@ -104,12 +98,11 @@ class MemoRAG:
         Returns:
             List of relevant documents with metadata
         """
-        # Ensure system is initialized
         if not self._initialized:
             await self.initialize()
             
         # Check if index exists and build if needed
-        if await self.vector_store.is_empty():
+        if self.vector_store.is_empty():
             self.logger.info("Vector store is empty, building index...")
             await self.build_index()
             
@@ -119,7 +112,7 @@ class MemoRAG:
         self.logger.debug(f"Querying with: '{query_text}' (top_k={top_k})")
         
         try:
-            results = await self.retriever.retrieve(
+            results = self.retriever.retrieve(
                 query_text=query_text,
                 top_k=top_k,
                 date_filter=date_filter,
@@ -196,15 +189,15 @@ class MemoRAG:
             self.logger.error(f"Failed to remove document {file_path}: {e}")
             raise
     
-    async def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> Dict[str, Any]:
         """Get statistics about the RAG system."""
         # Ensure system is initialized
         if not self._initialized:
-            await self.initialize()
+            self.initialize()
             
         return {
-            "total_documents": await self.vector_store.get_document_count(),
-            "total_chunks": await self.vector_store.get_chunk_count(),
+            "total_documents": self.vector_store.get_document_count(),
+            "total_chunks": self.vector_store.get_chunk_count(),
             "embedding_model": self.embedding_manager.model_name,
             "device": self.embedding_manager.device,
             "vector_dimension": self.embedding_manager.embedding_dimension,
@@ -219,10 +212,10 @@ class MemoRAG:
                 return {"status": "not_initialized", "healthy": False}
             
             # Test embedding generation
-            test_embedding = await self.embedding_manager.embed_text("test")
+            test_embedding = self.embedding_manager.embed_text("test")
             
             # Test vector store
-            stats = await self.get_stats()
+            stats = self.get_stats()
             
             return {
                 "status": "healthy",
@@ -254,10 +247,9 @@ class MemoRAG:
         gc.collect() # Force garbage collection after closing components
 
 
-# Convenience functions for easy usage
-async def create_rag_system(config: Optional[RAGConfig] = None) -> MemoRAG:
+async def create_rag_system(config: Optional[RAGConfig] = None, logger: Optional[Logger] = None) -> MemoRAG:
     """Create and initialize a RAG system."""
-    rag = MemoRAG(config)
+    rag = MemoRAG(config, logger)
     await rag.initialize()
     return rag
 

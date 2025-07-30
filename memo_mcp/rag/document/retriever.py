@@ -22,7 +22,7 @@ class DocumentRetriever:
         self.vector_store = vector_store
         self.logger = logging.getLogger(__name__)
     
-    async def retrieve(
+    def retrieve(
         self,
         query_text: str,
         top_k: int,
@@ -49,11 +49,11 @@ class DocumentRetriever:
         processed_query = self._preprocess_query(query_text)
         
         # Generate query embedding
-        query_embedding = await self.embedding_manager.embed_text(processed_query)
+        query_embedding = self.embedding_manager.embed_text(processed_query)
         
         # Search vector store (get more results for filtering/reranking)
         search_k = min(top_k * 3, 50)  # Get extra results for filtering
-        raw_results = await self.vector_store.search(
+        raw_results = self.vector_store.search(
             query_embedding=query_embedding,
             top_k=search_k,
             similarity_threshold=similarity_threshold * 0.8  # Lower threshold for initial search
@@ -68,7 +68,7 @@ class DocumentRetriever:
         
         # Apply reranking if enabled
         if enable_reranking:
-            raw_results = await self._rerank_results(raw_results, query_text, processed_query)
+            raw_results = self._rerank_results(raw_results, query_text, processed_query)
         
         # Apply final similarity threshold
         filtered_results = [
@@ -150,7 +150,7 @@ class DocumentRetriever:
         
         return filtered_results
     
-    async def _rerank_results(
+    def _rerank_results(
         self, 
         results: List[Dict[str, Any]], 
         original_query: str,
