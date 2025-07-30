@@ -291,6 +291,15 @@ class EmbeddingManager:
         """Clean up resources and save cache."""
         self._save_cache()
         
+        # Clean up model resources
+        if hasattr(self, 'model') and self.model is not None:
+            del self.model
+            self.model = None
+            
+        if hasattr(self, 'tokenizer') and self.tokenizer is not None:
+            del self.tokenizer
+            self.tokenizer = None
+        
         # Clear GPU memory if using CUDA
         if self.device and "cuda" in self.device:
             try:
@@ -298,5 +307,9 @@ class EmbeddingManager:
                 torch.cuda.empty_cache()
             except ImportError:
                 pass
+        
+        # Force garbage collection
+        import gc
+        gc.collect()
         
         self.logger.info("Embedding manager closed")

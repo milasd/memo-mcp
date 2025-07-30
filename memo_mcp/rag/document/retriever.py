@@ -45,10 +45,7 @@ class DocumentRetriever:
         """
         self.logger.debug(f"Retrieving documents for query: '{query_text}'")
         
-        # Preprocess query
-        processed_query = self._preprocess_query(query_text)
-        
-        # Generate query embedding
+        processed_query = self._preprocess_query(query_text)        
         query_embedding = self.embedding_manager.embed_text(processed_query)
         
         # Search vector store (get more results for filtering/reranking)
@@ -62,11 +59,9 @@ class DocumentRetriever:
         if not raw_results:
             return []
         
-        # Apply date filtering
         if date_filter:
             raw_results = self._apply_date_filter(raw_results, date_filter)
         
-        # Apply reranking if enabled
         if enable_reranking:
             raw_results = self._rerank_results(raw_results, query_text, processed_query)
         
@@ -77,8 +72,7 @@ class DocumentRetriever:
         ]
         
         # Limit to requested number of results
-        final_results = filtered_results[:top_k]
-        
+        final_results = filtered_results[:top_k]        
         # Enhance results with additional metadata
         enhanced_results = self._enhance_results(final_results, query_text)
         
@@ -87,10 +81,8 @@ class DocumentRetriever:
     
     def _preprocess_query(self, query: str) -> str:
         """Preprocess query for better matching."""
-        # Basic cleaning
         query = query.strip()
         
-        # Expand common abbreviations
         expansions = {
             "w/": "with",
             "w/o": "without",

@@ -18,13 +18,11 @@ class VectorStore:
         self.logger = logging.getLogger(__name__)
         self.backend: Union[FAISSBackend, ChromaBackend, QdrantBackend, SimpleBackend] = None
         
-        # Import backends dynamically to avoid circular imports
         from memo_mcp.rag.vectors.database.faiss import FAISSBackend
         from memo_mcp.rag.vectors.database.chromadb import ChromaBackend
         from memo_mcp.rag.vectors.database.qdrant import QdrantBackend
         from memo_mcp.rag.vectors.database.simple import SimpleBackend
         
-        # Choose backend based on config
         backend_type = config.vector_store_type.lower()
         if backend_type == "faiss":
             self.backend = FAISSBackend(config)
