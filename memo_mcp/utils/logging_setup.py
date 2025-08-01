@@ -1,5 +1,6 @@
 import logging
 
+
 def set_logger(log_level: int = logging.INFO, name: str = "memo_rag") -> logging.Logger:
     """
     Setup logging configuration for the Memo RAG system.
@@ -17,9 +18,9 @@ def set_logger(log_level: int = logging.INFO, name: str = "memo_rag") -> logging
     if not logger.handlers:
         handler = logging.StreamHandler()
         formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         )
         handler.setFormatter(formatter)
         logger.addHandler(handler)
-        
+
     return logger

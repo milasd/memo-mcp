@@ -9,21 +9,18 @@ from .memo_rag import MemoRAG, create_rag_system, quick_query
 __all__ = [
     # Main classes
     "MemoRAG",
-    "RAGConfig", 
+    "RAGConfig",
     "DocumentMetadata",
-    
     # Core components
     "EmbeddingManager",
-    "VectorStore", 
+    "VectorStore",
     "DocumentIndexer",
     "DocumentRetriever",
-    
     # Utilities
     "TextProcessor",
-    "QueryExpander", 
+    "QueryExpander",
     "ResultAggregator",
     "FileWatcher",
-    
     # Convenience functions
     "create_rag_system",
     "quick_query",
