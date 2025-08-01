@@ -14,9 +14,7 @@ For privacy and safety, I recommend personal journaling with not-so-sensitive da
 - [MCP](#mcp)
 - [RAG](#rag)
 - [Architecture](#️-architecture)
-- [Code Usage Examples](#code-usage-examples)
-- [Development](#development)
-- [Troubleshooting](#troubleshooting)
+- [Codebase Usage Examples](#codebase-usage-examples)
 - [License](#license)
 
 
