@@ -4,7 +4,16 @@ version = "0.1.0"
 description = "Memo MCP"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = [ "mcp>=1.9.2",]
+dependencies = [
+ "chromadb>=1.0.12",
+ "faiss-cpu>=1.11.0",
+ "mcp>=1.9.2",
+ "qdrant-client>=1.14.2",
+ "sentence-transformers>=4.1.0",
+ "torch>=2.7.0",
+ "transformers>=4.52.4",
+ "watchdog>=6.0.0",
+]
 [[project.authors]]
 name = "milasd"
 email = "milasoaresdeoliveira@gmail.com"
@@ -12,6 +21,12 @@ email = "milasoaresdeoliveira@gmail.com"
 [build-system]
 requires = [ "hatchling",]
 build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+    "pytest-cov>=6.1.1",
+]
 
 [project.scripts]
 memo-mcp = "memo_mcp:main"
