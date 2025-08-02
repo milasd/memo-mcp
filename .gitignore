@@ -17,5 +17,7 @@ data/memo
 runner.py
 
 #Generated pytest data
-htmlcov
 .coverage
+.pytest_cache
+.ruff_cache
+htmlcov
