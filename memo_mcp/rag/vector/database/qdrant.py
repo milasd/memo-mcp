@@ -1,9 +1,10 @@
 import uuid
-from typing import List, Dict, Any, Optional, Tuple
+from typing import Any
+
 import numpy as np
 
-from memo_mcp.rag.vectors.database.vector_backend import VectorDatabase
-from memo_mcp.rag.config import RAGConfig, DocumentMetadata
+from memo_mcp.rag.config.rag_config import DocumentMetadata, RAGConfig
+from memo_mcp.rag.vector.database.vector_backend import VectorDatabase
 
 
 class QdrantBackend(VectorDatabase):
@@ -33,7 +34,7 @@ class QdrantBackend(VectorDatabase):
 
         try:
             from qdrant_client import QdrantClient
-            from qdrant_client.models import Distance, VectorParams, CreateCollection
+            from qdrant_client.models import CreateCollection, Distance, VectorParams
         except ImportError:
             raise ImportError(
                 "Qdrant client not installed. Install with: pip install qdrant-client"
@@ -132,9 +133,9 @@ class QdrantBackend(VectorDatabase):
 
     async def add_documents(
         self,
-        embeddings: List[np.ndarray],
-        texts: List[str],
-        metadatas: List[DocumentMetadata],
+        embeddings: list[np.ndarray],
+        texts: list[str],
+        metadatas: list[DocumentMetadata],
     ) -> None:
         """Add documents to Qdrant collection."""
         if not embeddings:
@@ -143,7 +144,9 @@ class QdrantBackend(VectorDatabase):
         from qdrant_client.models import PointStruct
 
         points = []
-        for embedding, text, metadata in zip(embeddings, texts, metadatas):
+        for embedding, text, metadata in zip(
+            embeddings, texts, metadatas, strict=False
+        ):
             # Create unique point ID
             point_id = str(uuid.uuid4())
 
@@ -191,7 +194,7 @@ class QdrantBackend(VectorDatabase):
 
     async def search(
         self, query_embedding: np.ndarray, top_k: int, similarity_threshold: float = 0.0
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search Qdrant collection for similar vectors."""
         try:
             search_result = self.client.search(
@@ -234,7 +237,7 @@ class QdrantBackend(VectorDatabase):
 
     async def remove_document(self, file_path: str) -> bool:
         """Remove all chunks of a document from Qdrant."""
-        from qdrant_client.models import Filter, FieldCondition, MatchValue
+        from qdrant_client.models import FieldCondition, Filter, MatchValue
 
         try:
             # Create filter for the specific file
@@ -326,12 +329,12 @@ class QdrantBackend(VectorDatabase):
         self,
         query_embedding: np.ndarray,
         top_k: int,
-        date_range: Optional[Tuple[str, str]] = None,
-        file_pattern: Optional[str] = None,
-        year_filter: Optional[str] = None,
-        month_filter: Optional[str] = None,
+        date_range: tuple[str, str] | None = None,
+        file_pattern: str | None = None,
+        year_filter: str | None = None,
+        month_filter: str | None = None,
         similarity_threshold: float = 0.0,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Advanced search with Qdrant's native filtering capabilities.
 
@@ -347,7 +350,7 @@ class QdrantBackend(VectorDatabase):
         Returns:
             List of filtered search results
         """
-        from qdrant_client.models import Filter, FieldCondition, MatchValue, Range
+        from qdrant_client.models import FieldCondition, Filter, MatchValue, Range
 
         conditions = []
 
@@ -451,7 +454,7 @@ class QdrantBackend(VectorDatabase):
             # Index might already exist
             self.logger.debug(f"Could not create payload index for {field_name}: {e}")
 
-    async def get_collection_info(self) -> Dict[str, Any]:
+    async def get_collection_info(self) -> dict[str, Any]:
         """Get detailed information about the collection."""
         try:
             collection_info = self.client.get_collection(self.collection_name)
@@ -490,7 +493,7 @@ class QdrantBackend(VectorDatabase):
             self.logger.warning(f"Failed to optimize collection: {e}")
             return False
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Perform a health check of the Qdrant backend."""
         try:
             # Collection-specific checks

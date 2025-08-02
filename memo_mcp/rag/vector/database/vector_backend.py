@@ -1,9 +1,10 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from typing import Any
+
 import numpy as np
 
-from memo_mcp.rag.config import RAGConfig, DocumentMetadata
+from memo_mcp.rag.config.rag_config import DocumentMetadata, RAGConfig
 
 
 class VectorDatabase(ABC):
@@ -26,9 +27,9 @@ class VectorDatabase(ABC):
     @abstractmethod
     async def add_documents(
         self,
-        embeddings: List[np.ndarray],
-        texts: List[str],
-        metadatas: List[DocumentMetadata],
+        embeddings: list[np.ndarray],
+        texts: list[str],
+        metadatas: list[DocumentMetadata],
     ) -> None:
         """
         Add document embeddings to the store.
@@ -43,7 +44,7 @@ class VectorDatabase(ABC):
     @abstractmethod
     async def search(
         self, query_embedding: np.ndarray, top_k: int, similarity_threshold: float = 0.0
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Search for similar documents.
 
@@ -95,7 +96,7 @@ class VectorDatabase(ABC):
         """Close the vector store and cleanup resources."""
         pass
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """
         Perform a health check of the backend.
         Default implementation provides basic status.
@@ -119,7 +120,7 @@ class VectorDatabase(ABC):
                 "error": str(e),
             }
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """
         Get basic stats about the vector store, such as document count.
         """

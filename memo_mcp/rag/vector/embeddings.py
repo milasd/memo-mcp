@@ -1,10 +1,10 @@
+import hashlib
 import logging
 import pickle
-import hashlib
-from typing import List, Dict
+
 import numpy as np
 
-from ..config import RAGConfig
+from memo_mcp.rag import RAGConfig
 
 
 class EmbeddingManager:
@@ -26,7 +26,7 @@ class EmbeddingManager:
         self.embedding_dimension = config.embedding_dimension
 
         # Caching
-        self._cache: Dict[str, np.ndarray] = {}
+        self._cache: dict[str, np.ndarray] = {}
         self._cache_dirty = False
 
     def initialize(self) -> None:
@@ -96,7 +96,7 @@ class EmbeddingManager:
     def _load_huggingface_model(self) -> None:
         """Load a HuggingFace transformers model."""
         try:
-            from transformers import AutoTokenizer, AutoModel
+            from transformers import AutoModel, AutoTokenizer
 
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
             self.model = AutoModel.from_pretrained(self.model_name)
@@ -180,7 +180,7 @@ class EmbeddingManager:
 
         return embedding
 
-    def embed_texts(self, texts: List[str]) -> List[np.ndarray]:
+    def embed_texts(self, texts: list[str]) -> list[np.ndarray]:
         """
         Generate embeddings for multiple texts efficiently.
 
@@ -221,19 +221,21 @@ class EmbeddingManager:
 
             # Cache new embeddings
             if self.config.cache_embeddings:
-                for text, embedding in zip(uncached_texts, new_embeddings):
+                for text, embedding in zip(
+                    uncached_texts, new_embeddings, strict=False
+                ):
                     cache_key = self._get_cache_key(text)
                     self._cache[cache_key] = embedding
                 self._cache_dirty = True
 
             # Add to results
-            for i, embedding in zip(uncached_indices, new_embeddings):
+            for i, embedding in zip(uncached_indices, new_embeddings, strict=False):
                 cached_embeddings[i] = embedding
 
         # Return in original order
         return [cached_embeddings[i] for i in range(len(texts))]
 
-    def _embed_with_sentence_transformer(self, texts: List[str]) -> List[np.ndarray]:
+    def _embed_with_sentence_transformer(self, texts: list[str]) -> list[np.ndarray]:
         """Generate embeddings using SentenceTransformer."""
         embeddings = self.model.encode(
             texts,
@@ -243,7 +245,7 @@ class EmbeddingManager:
         )
         return [emb.astype(np.float32) for emb in embeddings]
 
-    def _embed_with_huggingface(self, texts: List[str]) -> List[np.ndarray]:
+    def _embed_with_huggingface(self, texts: list[str]) -> list[np.ndarray]:
         """Generate embeddings using HuggingFace transformers."""
         try:
             import torch

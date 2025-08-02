@@ -1,11 +1,11 @@
 import logging
-from typing import List, Dict, Any, Optional, Tuple
-from datetime import datetime, date
 import re
+from datetime import date, datetime
+from typing import Any
 
-from memo_mcp.rag.config import RAGConfig
-from memo_mcp.rag.vectors.embeddings import EmbeddingManager
-from memo_mcp.rag.vectors.vector_store import VectorStore
+from memo_mcp.rag.config.rag_config import RAGConfig
+from memo_mcp.rag.vector.embeddings import EmbeddingManager
+from memo_mcp.rag.vector.vector_store import VectorStore
 
 
 class DocumentRetriever:
@@ -31,10 +31,10 @@ class DocumentRetriever:
         self,
         query_text: str,
         top_k: int,
-        date_filter: Optional[Tuple[date, date]] = None,
+        date_filter: tuple[date, date] | None = None,
         similarity_threshold: float = 0.0,
         enable_reranking: bool = True,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Retrieve relevant documents for a query.
 
@@ -126,8 +126,8 @@ class DocumentRetriever:
         return query
 
     def _apply_date_filter(
-        self, results: List[Dict[str, Any]], date_filter: Tuple[date, date]
-    ) -> List[Dict[str, Any]]:
+        self, results: list[dict[str, Any]], date_filter: tuple[date, date]
+    ) -> list[dict[str, Any]]:
         """Filter results by date range."""
         start_date, end_date = date_filter
         filtered_results = []
@@ -149,8 +149,8 @@ class DocumentRetriever:
         return filtered_results
 
     def _rerank_results(
-        self, results: List[Dict[str, Any]], original_query: str, processed_query: str
-    ) -> List[Dict[str, Any]]:
+        self, results: list[dict[str, Any]], original_query: str, processed_query: str
+    ) -> list[dict[str, Any]]:
         """Rerank results using additional signals."""
         if len(results) <= 1:
             return results
@@ -293,8 +293,8 @@ class DocumentRetriever:
             return 0.6
 
     def _enhance_results(
-        self, results: List[Dict[str, Any]], query: str
-    ) -> List[Dict[str, Any]]:
+        self, results: list[dict[str, Any]], query: str
+    ) -> list[dict[str, Any]]:
         """Enhance results with additional metadata and highlighting."""
         enhanced = []
 
@@ -337,7 +337,7 @@ class DocumentRetriever:
 
         return highlighted
 
-    def _generate_relevance_explanation(self, result: Dict[str, Any]) -> str:
+    def _generate_relevance_explanation(self, result: dict[str, Any]) -> str:
         """Generate explanation for why this result is relevant."""
         explanations = []
 
@@ -432,10 +432,10 @@ class ResultAggregator:
 
     @staticmethod
     def merge_results(
-        semantic_results: List[Dict[str, Any]],
-        keyword_results: List[Dict[str, Any]] = None,
+        semantic_results: list[dict[str, Any]],
+        keyword_results: list[dict[str, Any]] = None,
         top_k: int = 10,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Merge results from different search strategies."""
         all_results = {}
 

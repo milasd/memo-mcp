@@ -1,14 +1,14 @@
-import logging
 import asyncio
-from typing import List, Dict, Any, Optional
-from pathlib import Path
-from datetime import datetime
-import re
 import hashlib
+import logging
+import re
 
-from ..config import RAGConfig, DocumentMetadata
-from ..vectors.embeddings import EmbeddingManager
-from ..vectors.vector_store import VectorStore
+from ..config.rag_config import DocumentMetadata, RAGConfig
+from datetime import datetime
+from memo_mcp.rag.vector.embeddings import EmbeddingManager
+from memo_mcp.rag.vector.vector_store import VectorStore
+from pathlib import Path
+from typing import Any
 
 
 class DocumentIndexer:
@@ -30,7 +30,7 @@ class DocumentIndexer:
         self.logger = logging.getLogger(__name__)
 
         # Track processed files to avoid reprocessing
-        self._file_hashes: Dict[str, str] = {}
+        self._file_hashes: dict[str, str] = {}
         self._load_file_hashes()
 
     def _load_file_hashes(self) -> None:
@@ -40,7 +40,7 @@ class DocumentIndexer:
             try:
                 import json
 
-                with open(hash_file, "r") as f:
+                with open(hash_file) as f:
                     self._file_hashes = json.load(f)
             except Exception as e:
                 self.logger.warning(f"Failed to load file hashes: {e}")
@@ -67,9 +67,7 @@ class DocumentIndexer:
             content_hash.update(f"{stat.st_size}:{stat.st_mtime}".encode())
 
             # Include a sample of content for extra verification
-            with open(
-                file_path, "r", encoding=self.config.encoding, errors="ignore"
-            ) as f:
+            with open(file_path, encoding=self.config.encoding, errors="ignore") as f:
                 sample = f.read(1024)  # First 1KB
                 content_hash.update(sample.encode())
 
@@ -79,7 +77,7 @@ class DocumentIndexer:
             self.logger.warning(f"Failed to hash file {file_path}: {e}")
             return str(datetime.now().timestamp())
 
-    async def index_documents(self) -> Dict[str, Any]:
+    async def index_documents(self) -> dict[str, Any]:
         """
         Index all documents in the memo directory.
 
@@ -142,7 +140,7 @@ class DocumentIndexer:
             stats["error"] = str(e)
             raise
 
-    def _discover_memo_files(self) -> List[Path]:
+    def _discover_memo_files(self) -> list[Path]:
         """
         Discover all memo files in the directory structure.
 
@@ -179,7 +177,7 @@ class DocumentIndexer:
 
         return memo_files
 
-    async def _process_file_batch(self, files: List[Path]) -> Dict[str, int]:
+    async def _process_file_batch(self, files: list[Path]) -> dict[str, int]:
         """Process a batch of files concurrently."""
         tasks = [self._process_single_file(file_path) for file_path in files]
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -199,7 +197,7 @@ class DocumentIndexer:
 
         return stats
 
-    async def _process_single_file(self, file_path: Path) -> Optional[Dict[str, Any]]:
+    async def _process_single_file(self, file_path: Path) -> dict[str, Any] | None:
         """Process a single memo file."""
         try:
             # Check if file needs processing
@@ -256,9 +254,7 @@ class DocumentIndexer:
     def _read_file_content(self, file_path: Path) -> str:
         """Read and preprocess file content."""
         try:
-            with open(
-                file_path, "r", encoding=self.config.encoding, errors="ignore"
-            ) as f:
+            with open(file_path, encoding=self.config.encoding, errors="ignore") as f:
                 content = f.read()
 
             # Basic preprocessing
@@ -282,7 +278,7 @@ class DocumentIndexer:
 
         return content.strip()
 
-    def _chunk_text(self, text: str) -> List[str]:
+    def _chunk_text(self, text: str) -> list[str]:
         """
         Split text into overlapping chunks.
 
@@ -342,7 +338,7 @@ class DocumentIndexer:
 
         return chunks
 
-    def _split_sentences(self, text: str) -> List[str]:
+    def _split_sentences(self, text: str) -> list[str]:
         """Split text into sentences."""
         # Simple sentence splitting - could be improved with proper NLP libraries
         sentences = re.split(r"(?<=[.!?])\s+", text)
@@ -369,7 +365,7 @@ class DocumentIndexer:
 
         return merged_sentences
 
-    def _split_long_sentence(self, sentence: str) -> List[str]:
+    def _split_long_sentence(self, sentence: str) -> list[str]:
         """Split a long sentence into smaller chunks."""
         chunks = []
 
@@ -400,7 +396,7 @@ class DocumentIndexer:
 
         return final_chunks
 
-    def _split_by_words(self, text: str) -> List[str]:
+    def _split_by_words(self, text: str) -> list[str]:
         """Split text by words when other methods fail."""
         words = text.split()
         chunks = []
@@ -481,7 +477,7 @@ class TextProcessor:
     """
 
     @staticmethod
-    def extract_metadata_from_content(content: str) -> Dict[str, Any]:
+    def extract_metadata_from_content(content: str) -> dict[str, Any]:
         """Extract metadata from document content."""
         metadata = {}
 
@@ -589,8 +585,8 @@ class FileWatcher:
     async def start_watching(self) -> None:
         """Start watching the memo directory for changes."""
         try:
-            from watchdog.observers import Observer
             from watchdog.events import FileSystemEventHandler
+            from watchdog.observers import Observer
         except ImportError:
             self.logger.warning(
                 "Watchdog not installed. File watching disabled. "

@@ -1,18 +1,21 @@
-import os
 import logging
-from pathlib import Path
-from typing import Optional, List
+import os
+
 from dataclasses import dataclass, field
 from datetime import datetime
+from memo_mcp.config import DATA_DIR, TOP_K
+from pathlib import Path
 
+
+INDEX_DIR = Path("index")
 
 @dataclass
 class RAGConfig:
     """Configuration for the RAG system."""
 
     # Paths
-    data_root: Path = field(default_factory=lambda: Path("data/memo"))
-    index_path: Path = field(default_factory=lambda: Path("index"))
+    data_root: Path = field(default_factory=lambda: DATA_DIR)
+    index_path: Path = field(default_factory=lambda: INDEX_DIR)
 
     # Embedding settings
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
@@ -26,7 +29,7 @@ class RAGConfig:
     min_chunk_size: int = 50
 
     # Retrieval settings
-    default_top_k: int = 365
+    default_top_k: int = TOP_K
     similarity_threshold: float = 0.3
 
     # Vector store settings
@@ -34,7 +37,7 @@ class RAGConfig:
     persist_embeddings: bool = True
 
     # File processing
-    supported_extensions: List[str] = field(default_factory=lambda: [".md", ".txt"])
+    supported_extensions: list[str] = field(default_factory=lambda: [".md", ".txt"])
     encoding: str = "utf-8"
 
     # Qdrant-specific settings
@@ -42,7 +45,7 @@ class RAGConfig:
     qdrant_port: int = 6333
     qdrant_collection_name: str = "memo_documents"
     qdrant_use_https: bool = False
-    qdrant_api_key: Optional[str] = None
+    qdrant_api_key: str | None = None
     qdrant_prefer_grpc: bool = True
 
     # Performance settings
@@ -136,8 +139,7 @@ class RAGConfig:
             "batch_size": self.batch_size,
             "chunk_size": self.chunk_size,
             "chunk_overlap": self.chunk_overlap,
-            "default_top_k": None,
-            # "default_top_k": self.default_top_k,
+            "default_top_k": self.default_top_k,
             "similarity_threshold": self.similarity_threshold,
             "vector_store_type": self.vector_store_type,
             "device": self.device,

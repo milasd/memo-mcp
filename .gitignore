@@ -15,3 +15,7 @@ index
 data/memo
 
 runner.py
+
+#Generated pytest data
+htmlcov
+.coverage

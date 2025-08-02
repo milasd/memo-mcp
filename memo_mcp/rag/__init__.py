@@ -1,9 +1,9 @@
-from .config import DocumentMetadata, RAGConfig, load_config_from_env
-from .vectors.embeddings import EmbeddingManager
-from .vectors.vector_store import VectorStore
-from .document.indexer import DocumentIndexer, TextProcessor, FileWatcher
+from .config.rag_config import DocumentMetadata, RAGConfig, load_config_from_env
+from .document.indexer import DocumentIndexer, FileWatcher, TextProcessor
 from .document.retriever import DocumentRetriever, QueryExpander, ResultAggregator
 from .memo_rag import MemoRAG, create_rag_system, quick_query
+from .vector.embeddings import EmbeddingManager
+from .vector.vector_store import VectorStore
 
 # Main exports
 __all__ = [

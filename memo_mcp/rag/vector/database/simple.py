@@ -1,9 +1,10 @@
 import pickle
-from typing import List, Dict, Any
+from typing import Any
+
 import numpy as np
 
-from memo_mcp.rag.vectors.database.vector_backend import VectorDatabase
-from memo_mcp.rag.config import RAGConfig, DocumentMetadata
+from memo_mcp.rag.config.rag_config import DocumentMetadata, RAGConfig
+from memo_mcp.rag.vector.database.vector_backend import VectorDatabase
 
 
 class SimpleBackend(VectorDatabase):
@@ -12,9 +13,9 @@ class SimpleBackend(VectorDatabase):
     def __init__(self, config: RAGConfig):
         super().__init__(config)
 
-        self.embeddings: List[np.ndarray] = []
-        self.texts: List[str] = []
-        self.metadatas: List[DocumentMetadata] = []
+        self.embeddings: list[np.ndarray] = []
+        self.texts: list[str] = []
+        self.metadatas: list[DocumentMetadata] = []
 
         self.data_path = config.vector_store_path / "simple_store.pkl"
 
@@ -57,9 +58,9 @@ class SimpleBackend(VectorDatabase):
 
     async def add_documents(
         self,
-        embeddings: List[np.ndarray],
-        texts: List[str],
-        metadatas: List[DocumentMetadata],
+        embeddings: list[np.ndarray],
+        texts: list[str],
+        metadatas: list[DocumentMetadata],
     ) -> None:
         """Add documents to simple store."""
         self.embeddings.extend(embeddings)
@@ -71,7 +72,7 @@ class SimpleBackend(VectorDatabase):
 
     def search(
         self, query_embedding: np.ndarray, top_k: int, similarity_threshold: float = 0.0
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search using cosine similarity."""
         if not self.embeddings:
             return []
@@ -146,7 +147,7 @@ class SimpleBackend(VectorDatabase):
         """Close simple backend."""
         await self._save_data()
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Perform simple backend health check."""
         try:
             return {

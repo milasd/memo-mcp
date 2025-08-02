@@ -1,8 +1,9 @@
-from typing import List, Dict, Any
+from typing import Any
+
 import numpy as np
 
-from memo_mcp.rag.vectors.database.vector_backend import VectorDatabase
-from memo_mcp.rag.config import RAGConfig, DocumentMetadata
+from memo_mcp.rag.config.rag_config import DocumentMetadata, RAGConfig
+from memo_mcp.rag.vector.database.vector_backend import VectorDatabase
 
 
 class ChromaBackend(VectorDatabase):
@@ -37,9 +38,9 @@ class ChromaBackend(VectorDatabase):
 
     async def add_documents(
         self,
-        embeddings: List[np.ndarray],
-        texts: List[str],
-        metadatas: List[DocumentMetadata],
+        embeddings: list[np.ndarray],
+        texts: list[str],
+        metadatas: list[DocumentMetadata],
     ) -> None:
         """Add documents to ChromaDB."""
         if not embeddings:
@@ -85,7 +86,7 @@ class ChromaBackend(VectorDatabase):
 
     def search(
         self, query_embedding: np.ndarray, top_k: int, similarity_threshold: float = 0.0
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search ChromaDB collection."""
         results = self.collection.query(
             query_embeddings=[query_embedding.tolist()], n_results=top_k
@@ -97,6 +98,7 @@ class ChromaBackend(VectorDatabase):
                 results["documents"][0],
                 results["metadatas"][0],
                 results["distances"][0],
+                strict=False,
             ):
                 # Convert distance to similarity score (ChromaDB returns distances)
                 similarity_score = 1.0 - distance
@@ -173,7 +175,7 @@ class ChromaBackend(VectorDatabase):
             self.client = None
             self.logger.info("ChromaDB client explicitly cleared.")
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Perform ChromaDB-specific health check."""
         try:
             # Test basic connectivity

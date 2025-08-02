@@ -1,10 +1,11 @@
-import faiss
 import pickle
-from typing import List, Dict, Any
+from typing import Any
+
+import faiss
 import numpy as np
 
-from memo_mcp.rag.vectors.database.vector_backend import VectorDatabase
-from memo_mcp.rag.config import RAGConfig, DocumentMetadata
+from memo_mcp.rag.config.rag_config import DocumentMetadata, RAGConfig
+from memo_mcp.rag.vector.database.vector_backend import VectorDatabase
 
 
 class FAISSBackend(VectorDatabase):
@@ -14,8 +15,8 @@ class FAISSBackend(VectorDatabase):
         super().__init__(config)
 
         self.index = None
-        self.texts: List[str] = []
-        self.metadatas: List[DocumentMetadata] = []
+        self.texts: list[str] = []
+        self.metadatas: list[DocumentMetadata] = []
         self.dimension = config.embedding_dimension
 
         # File paths
@@ -87,9 +88,9 @@ class FAISSBackend(VectorDatabase):
 
     async def add_documents(
         self,
-        embeddings: List[np.ndarray],
-        texts: List[str],
-        metadatas: List[DocumentMetadata],
+        embeddings: list[np.ndarray],
+        texts: list[str],
+        metadatas: list[DocumentMetadata],
     ) -> None:
         """Add documents to FAISS index."""
         if not embeddings:
@@ -118,7 +119,7 @@ class FAISSBackend(VectorDatabase):
 
     def search(
         self, query_embedding: np.ndarray, top_k: int, similarity_threshold: float = 0.0
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search for similar documents in FAISS index."""
         if self.index.ntotal == 0:
             return []
@@ -135,7 +136,7 @@ class FAISSBackend(VectorDatabase):
         )
 
         results = []
-        for score, idx in zip(scores[0], indices[0]):
+        for score, idx in zip(scores[0], indices[0], strict=False):
             if idx == -1:  # FAISS returns -1 for empty slots
                 continue
 

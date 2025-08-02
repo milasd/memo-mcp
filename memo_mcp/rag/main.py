@@ -1,8 +1,8 @@
 import asyncio
-from pathlib import Path
 
 from memo_mcp.rag import RAGConfig, create_rag_system
 from memo_mcp.utils.logging_setup import set_logger
+from pathlib import Path
 
 # os.environ["TOKENIZERS_PARALLELISM"] = "false"
 # os.environ["OMP_NUM_THREADS"] = "1"
@@ -12,10 +12,13 @@ from memo_mcp.utils.logging_setup import set_logger
 
 """Sample script to run RAG system locally without MCP."""
 
+SAMPLE_DATA_DIR = Path("data/memo_example")
+VECTOR_DB = "chroma" # you can try "faiss", "chroma", "simple". in the future, will support "qdrant"
+
 async def run_rag():
     config = RAGConfig(
-        vector_store_type="chroma",
-        data_root=Path("data/memo_example"),
+        vector_store_type=VECTOR_DB,
+        data_root=SAMPLE_DATA_DIR,
         use_gpu=True,
         cache_embeddings=True,
     )

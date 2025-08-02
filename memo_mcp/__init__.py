@@ -1,5 +1,6 @@
-from .mcp import server
 import asyncio
+
+from .mcp import server
 
 
 def main():
