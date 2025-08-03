@@ -1,14 +1,15 @@
-import logging
 import asyncio
-from typing import List, Dict, Any, Optional
-from pathlib import Path
-from datetime import datetime
-import re
 import hashlib
+import logging
+import re
+from datetime import datetime
+from pathlib import Path
+from typing import Any
 
-from ..config import RAGConfig, DocumentMetadata
-from ..vectors.embeddings import EmbeddingManager
-from ..vectors.vector_store import VectorStore
+from memo_mcp.rag.vector.embeddings import EmbeddingManager
+from memo_mcp.rag.vector.vector_store import VectorStore
+
+from ..config.rag_config import DocumentMetadata, RAGConfig
 
 
 class DocumentIndexer:
@@ -30,7 +31,7 @@ class DocumentIndexer:
         self.logger = logging.getLogger(__name__)
 
         # Track processed files to avoid reprocessing
-        self._file_hashes: Dict[str, str] = {}
+        self._file_hashes: dict[str, str] = {}
         self._load_file_hashes()
 
     def _load_file_hashes(self) -> None:
@@ -40,7 +41,7 @@ class DocumentIndexer:
             try:
                 import json
 
-                with open(hash_file, "r") as f:
+                with open(hash_file) as f:
                     self._file_hashes = json.load(f)
             except Exception as e:
                 self.logger.warning(f"Failed to load file hashes: {e}")
@@ -67,9 +68,7 @@ class DocumentIndexer:
             content_hash.update(f"{stat.st_size}:{stat.st_mtime}".encode())
 
             # Include a sample of content for extra verification
-            with open(
-                file_path, "r", encoding=self.config.encoding, errors="ignore"
-            ) as f:
+            with open(file_path, encoding=self.config.encoding, errors="ignore") as f:
                 sample = f.read(1024)  # First 1KB
                 content_hash.update(sample.encode())
 
@@ -79,7 +78,7 @@ class DocumentIndexer:
             self.logger.warning(f"Failed to hash file {file_path}: {e}")
             return str(datetime.now().timestamp())
 
-    async def index_documents(self) -> Dict[str, Any]:
+    async def index_documents(self) -> dict[str, Any]:
         """
         Index all documents in the memo directory.
 
@@ -88,18 +87,18 @@ class DocumentIndexer:
         """
         self.logger.info("Starting document indexing...")
 
+        start_time = datetime.now()
         stats = {
             "total_files": 0,
             "processed_files": 0,
             "skipped_files": 0,
             "total_chunks": 0,
             "errors": 0,
-            "start_time": datetime.now(),
         }
 
         try:
             # Discover all memo files
-            memo_files = self._discover_memo_files()
+            memo_files: list[Path] = self._discover_memo_files()
             stats["total_files"] = len(memo_files)
 
             self.logger.info(f"Found {len(memo_files)} memo files to process")
@@ -125,30 +124,35 @@ class DocumentIndexer:
             # Save file hashes
             self._save_file_hashes()
 
-            stats["end_time"] = datetime.now()
-            stats["duration"] = (
-                stats["end_time"] - stats["start_time"]
-            ).total_seconds()
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+
+            final_stats = {
+                **stats,
+                "start_time": start_time,
+                "end_time": end_time,
+                "duration": duration,
+            }
 
             self.logger.info(
-                f"Indexing completed in {stats['duration']:.2f}s: "
+                f"Indexing completed in {duration:.2f}s: "
                 f"{stats['processed_files']} files, {stats['total_chunks']} chunks"
             )
 
-            return stats
+            return final_stats
 
         except Exception as e:
             self.logger.error(f"Indexing failed: {e}")
-            stats["error"] = str(e)
+            # Re-raise the exception after logging
             raise
 
-    def _discover_memo_files(self) -> List[Path]:
+    def _discover_memo_files(self) -> list[Path]:
         """
         Discover all memo files in the directory structure.
 
         Expected structure: data/memo/YYYY/MM/DD.md
         """
-        memo_files = []
+        memo_files: list[Path] = []
 
         if not self.config.data_root.exists():
             self.logger.warning(
@@ -179,7 +183,7 @@ class DocumentIndexer:
 
         return memo_files
 
-    async def _process_file_batch(self, files: List[Path]) -> Dict[str, int]:
+    async def _process_file_batch(self, files: list[Path]) -> dict[str, int]:
         """Process a batch of files concurrently."""
         tasks = [self._process_single_file(file_path) for file_path in files]
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -187,19 +191,19 @@ class DocumentIndexer:
         stats = {"processed": 0, "skipped": 0, "chunks": 0, "errors": 0}
 
         for result in results:
-            if isinstance(result, Exception):
-                stats["errors"] += 1
-                self.logger.error(f"File processing error: {result}")
-            elif result:
-                if result["processed"]:
+            if isinstance(result, dict):
+                if result.get("processed"):
                     stats["processed"] += 1
-                    stats["chunks"] += result["chunks"]
+                    stats["chunks"] += result.get("chunks", 0)
                 else:
                     stats["skipped"] += 1
+            elif isinstance(result, Exception):
+                stats["errors"] += 1
+                self.logger.error(f"File processing error: {result}")
 
         return stats
 
-    async def _process_single_file(self, file_path: Path) -> Optional[Dict[str, Any]]:
+    async def _process_single_file(self, file_path: Path) -> dict[str, Any] | None:
         """Process a single memo file."""
         try:
             # Check if file needs processing
@@ -256,9 +260,7 @@ class DocumentIndexer:
     def _read_file_content(self, file_path: Path) -> str:
         """Read and preprocess file content."""
         try:
-            with open(
-                file_path, "r", encoding=self.config.encoding, errors="ignore"
-            ) as f:
+            with open(file_path, encoding=self.config.encoding, errors="ignore") as f:
                 content = f.read()
 
             # Basic preprocessing
@@ -282,7 +284,7 @@ class DocumentIndexer:
 
         return content.strip()
 
-    def _chunk_text(self, text: str) -> List[str]:
+    def _chunk_text(self, text: str) -> list[str]:
         """
         Split text into overlapping chunks.
 
@@ -342,7 +344,7 @@ class DocumentIndexer:
 
         return chunks
 
-    def _split_sentences(self, text: str) -> List[str]:
+    def _split_sentences(self, text: str) -> list[str]:
         """Split text into sentences."""
         # Simple sentence splitting - could be improved with proper NLP libraries
         sentences = re.split(r"(?<=[.!?])\s+", text)
@@ -369,7 +371,7 @@ class DocumentIndexer:
 
         return merged_sentences
 
-    def _split_long_sentence(self, sentence: str) -> List[str]:
+    def _split_long_sentence(self, sentence: str) -> list[str]:
         """Split a long sentence into smaller chunks."""
         chunks = []
 
@@ -400,7 +402,7 @@ class DocumentIndexer:
 
         return final_chunks
 
-    def _split_by_words(self, text: str) -> List[str]:
+    def _split_by_words(self, text: str) -> list[str]:
         """Split text by words when other methods fail."""
         words = text.split()
         chunks = []
@@ -481,7 +483,7 @@ class TextProcessor:
     """
 
     @staticmethod
-    def extract_metadata_from_content(content: str) -> Dict[str, Any]:
+    def extract_metadata_from_content(content: str) -> dict[str, Any]:
         """Extract metadata from document content."""
         metadata = {}
 
@@ -571,85 +573,3 @@ class TextProcessor:
         )
 
         return enhanced
-
-
-class FileWatcher:
-    """
-    Optional file system watcher for real-time indexing.
-
-    Monitors the memo directory for changes and triggers reindexing.
-    """
-
-    def __init__(self, indexer: DocumentIndexer):
-        self.indexer = indexer
-        self.logger = logging.getLogger(__name__)
-        self._observer = None
-        self._running = False
-
-    async def start_watching(self) -> None:
-        """Start watching the memo directory for changes."""
-        try:
-            from watchdog.observers import Observer
-            from watchdog.events import FileSystemEventHandler
-        except ImportError:
-            self.logger.warning(
-                "Watchdog not installed. File watching disabled. "
-                "Install with: pip install watchdog"
-            )
-            return
-
-        class MemoEventHandler(FileSystemEventHandler):
-            def __init__(self, indexer_ref):
-                self.indexer = indexer_ref
-                self.logger = logging.getLogger(f"{__name__}.watcher")
-
-            def on_modified(self, event):
-                if not event.is_directory:
-                    self._handle_file_change(event.src_path)
-
-            def on_created(self, event):
-                if not event.is_directory:
-                    self._handle_file_change(event.src_path)
-
-            def on_deleted(self, event):
-                if not event.is_directory:
-                    asyncio.create_task(self._handle_file_deletion(event.src_path))
-
-            def _handle_file_change(self, file_path):
-                path = Path(file_path)
-                if path.suffix in self.indexer.config.supported_extensions:
-                    asyncio.create_task(
-                        self.indexer.index_single_document(path, force_reindex=True)
-                    )
-
-            async def _handle_file_deletion(self, file_path):
-                try:
-                    await self.indexer.vector_store.remove_document(file_path)
-                    self.logger.info(
-                        f"Removed deleted document from index: {file_path}"
-                    )
-                except Exception as e:
-                    self.logger.error(f"Failed to remove deleted document: {e}")
-
-        self._observer = Observer()
-        event_handler = MemoEventHandler(self.indexer)
-
-        self._observer.schedule(
-            event_handler, str(self.indexer.config.data_root), recursive=True
-        )
-
-        self._observer.start()
-        self._running = True
-        self.logger.info(f"Started watching {self.indexer.config.data_root}")
-
-    def stop_watching(self) -> None:
-        """Stop watching for file changes."""
-        if self._observer and self._running:
-            self._observer.stop()
-            self._observer.join()
-            self._running = False
-            self.logger.info("Stopped file watching")
-
-    def is_running(self) -> bool:
-        """Check if file watching is active."""
-        return self._running

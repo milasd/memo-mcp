@@ -1,10 +1,10 @@
 import logging
-from typing import List, Dict, Any, Union
+from typing import Any
+
 import numpy as np
 
-from memo_mcp.rag.vectors.database.vector_backend import VectorDatabase
-
-from memo_mcp.rag.config import RAGConfig, DocumentMetadata
+from memo_mcp.rag.config.rag_config import DocumentMetadata, RAGConfig
+from memo_mcp.rag.vector.database.vector_backend import VectorDatabase
 
 
 class VectorStore:
@@ -17,22 +17,21 @@ class VectorStore:
     def __init__(self, config: RAGConfig):
         self.config = config
         self.logger = logging.getLogger(__name__)
-        self.backend: Union[
-            FAISSBackend, ChromaBackend, QdrantBackend, SimpleBackend
-        ] = None
 
-        from memo_mcp.rag.vectors.database.faiss import FAISSBackend
-        from memo_mcp.rag.vectors.database.chromadb import ChromaBackend
-        from memo_mcp.rag.vectors.database.qdrant import QdrantBackend
-        from memo_mcp.rag.vectors.database.simple import SimpleBackend
+        # from memo_mcp.rag.vector.database.qdrant import QdrantBackend
+        from memo_mcp.rag.vector.database.chromadb import ChromaBackend
+        from memo_mcp.rag.vector.database.faiss import FAISSBackend
+        from memo_mcp.rag.vector.database.simple import SimpleBackend
+
+        self.backend: FAISSBackend | ChromaBackend | SimpleBackend
 
         backend_type = config.vector_store_type.lower()
         if backend_type == "faiss":
             self.backend = FAISSBackend(config)
         elif backend_type == "chroma":
             self.backend = ChromaBackend(config)
-        elif backend_type == "qdrant":
-            self.backend = QdrantBackend(config)
+        # elif backend_type == "qdrant":
+        #     self.backend = QdrantBackend(config)
         else:
             self.backend = SimpleBackend(config)
 
@@ -42,16 +41,16 @@ class VectorStore:
 
     async def add_documents(
         self,
-        embeddings: List[np.ndarray],
-        texts: List[str],
-        metadatas: List[DocumentMetadata],
+        embeddings: list[np.ndarray],
+        texts: list[str],
+        metadatas: list[DocumentMetadata],
     ) -> None:
         """Add document embeddings to the store."""
         await self.backend.add_documents(embeddings, texts, metadatas)
 
     def search(
         self, query_embedding: np.ndarray, top_k: int, similarity_threshold: float = 0.0
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search for similar documents."""
         return self.backend.search(query_embedding, top_k, similarity_threshold)
 
@@ -80,11 +79,11 @@ class VectorStore:
         if self.backend:
             await self.backend.close()
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Perform a health check of the vector store."""
         return self.backend.health_check()
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get statistical information about the vector store."""
         return self.backend.get_stats()
 

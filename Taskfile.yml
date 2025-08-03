@@ -1,0 +1,83 @@
+version: '3'
+
+tasks:
+  format:
+    desc: Format code using ruff
+    deps:
+      - install-dev
+    cmds:
+      - echo "[FORMAT] Formatting Python files..."
+      - |
+        FILES_COUNT=$(find . -name "*.py" -not -path "./.venv/*" -not -path "./.*" | wc -l | tr -d ' ')
+        echo "[INFO] Found $FILES_COUNT Python files to format"
+      - uv run ruff format .
+
+  check:
+    desc: Run code quality checks
+    deps:
+      - install-dev
+    cmds:
+      - echo "[CHECK] Running code quality checks..."
+      - |
+        FILES_COUNT=$(find . -name "*.py" -not -path "./.venv/*" -not -path "./.*" | wc -l | tr -d ' ')
+        echo "[INFO] Checking $FILES_COUNT Python files with ruff"
+      - uv run ruff check .
+      - uv run mypy memo_mcp --ignore-missing-imports
+
+  test:
+    desc: Run tests with pytest
+    deps:
+      - install-dev
+    cmds:
+      - echo "[TEST] Running tests..."
+      - |
+        TEST_COUNT=$(find tests/ -name "test_*.py" -o -name "*_test.py" | wc -l | tr -d ' ')
+        echo "[INFO] Found $TEST_COUNT test files"
+      - uv run pytest tests/ -v --cov=memo_mcp
+      - echo "[SUCCESS] Test execution completed"
+
+  test-cov:
+    desc: Run tests with coverage report
+    deps:
+      - install-dev
+    cmds:
+      - echo "[TEST] Running tests with coverage analysis..."
+      - |
+        TEST_COUNT=$(find tests/ -name "test_*.py" -o -name "*_test.py" | wc -l | tr -d ' ')
+        echo "[INFO] Found $TEST_COUNT test files"
+      - uv run pytest tests/ --cov=memo_mcp --cov-report=term-missing --cov-report=html
+      - echo "[INFO] Coverage report generated in htmlcov/ directory"
+      - echo "[SUCCESS] Test execution with coverage completed"
+
+  install-dev:
+    desc: Install development dependencies
+    cmds:
+      - echo "[INSTALL] Installing development dependencies..."
+      - uv sync --group dev
+      - echo "[SUCCESS] Development dependencies installed"
+
+  clean:
+    desc: Clean up generated files
+    cmds:
+      - echo "[CLEAN] Cleaning up generated files and caches..."
+      - |
+        CACHE_DIRS=$(find . -type d -name __pycache__ | wc -l | tr -d ' ')
+        PYC_FILES=$(find . -name "*.pyc" | wc -l | tr -d ' ')
+        echo "[INFO] Found $CACHE_DIRS __pycache__ directories and $PYC_FILES .pyc files"
+      - rm -rf htmlcov/ .coverage coverage.xml .pytest_cache/ .mypy_cache/ .ruff_cache/
+      - find . -type d -name __pycache__ -exec rm -rf {} +
+      - find . -name "*.pyc" -delete
+      - echo "[SUCCESS] Cleanup completed"
+
+  rag:
+    desc: Run the RAG demo script (memo_mcp/rag/main.py)
+    cmds:
+      - echo "[RAG] Starting RAG demo..."
+      - uv run python memo_mcp/rag/main.py
+      - echo "[SUCCESS] RAG demo completed"
+
+  server:
+    desc: Run the MCP server in the CLI
+    cmds:
+      - echo "[SERVER] Starting MCP server..."
+      - uv run memo-mcp

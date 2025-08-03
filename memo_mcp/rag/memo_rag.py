@@ -1,13 +1,14 @@
-from logging import Logger
-from typing import List, Dict, Any, Optional, Tuple
-from pathlib import Path
 from datetime import date
+from logging import Logger
+from pathlib import Path
+from typing import Any
 
-from memo_mcp.rag.vectors.embeddings import EmbeddingManager
-from memo_mcp.rag.vectors.vector_store import VectorStore
+from memo_mcp.rag.config.rag_config import RAGConfig
 from memo_mcp.rag.document.indexer import DocumentIndexer
 from memo_mcp.rag.document.retriever import DocumentRetriever
-from memo_mcp.rag.config import RAGConfig
+from memo_mcp.rag.vector.embeddings import EmbeddingManager
+from memo_mcp.rag.vector.vector_store import VectorStore
+
 from ..utils.logging_setup import set_logger
 
 
@@ -19,9 +20,7 @@ class MemoRAG:
     for daily journal entries stored in hierarchical date structure.
     """
 
-    def __init__(
-        self, config: Optional[RAGConfig] = None, logger: Optional[Logger] = None
-    ):
+    def __init__(self, config: RAGConfig | None = None, logger: Logger | None = None):
         """Initialize the RAG system with configuration."""
         self.config = config or RAGConfig()
         self.logger = logger or set_logger()
@@ -57,7 +56,7 @@ class MemoRAG:
             self.logger.error(f"Failed to initialize RAG system: {e}")
             raise
 
-    async def build_index(self, force_rebuild: bool = False) -> Dict[str, Any]:
+    async def build_index(self, force_rebuild: bool = False) -> dict[str, Any]:
         """
         Build or rebuild the document index.
 
@@ -90,10 +89,10 @@ class MemoRAG:
     async def query(
         self,
         query_text: str,
-        top_k: int = None,
-        date_filter: Optional[Tuple[date, date]] = None,
-        similarity_threshold: float = None,
-    ) -> List[Dict[str, Any]]:
+        top_k: int | None = None,
+        date_filter: tuple[date, date] | None = None,
+        similarity_threshold: float | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Query the RAG system for relevant documents.
 
@@ -190,11 +189,11 @@ class MemoRAG:
             self.logger.error(f"Failed to remove document {file_path}: {e}")
             raise
 
-    def get_stats(self) -> Dict[str, Any]:
+    async def get_stats(self) -> dict[str, Any]:
         """Get statistics about the RAG system."""
         # Ensure system is initialized
         if not self._initialized:
-            self.initialize()
+            await self.initialize()
 
         return {
             "total_documents": self.vector_store.get_document_count(),
@@ -206,7 +205,7 @@ class MemoRAG:
             "chunk_overlap": self.config.chunk_overlap,
         }
 
-    async def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Perform a health check of the RAG system."""
         try:
             if not self._initialized:
@@ -246,18 +245,9 @@ class MemoRAG:
 
 
 async def create_rag_system(
-    config: Optional[RAGConfig] = None, logger: Optional[Logger] = None
+    config: RAGConfig | None = None, logger: Logger | None = None
 ) -> MemoRAG:
     """Create and initialize a RAG system."""
     rag = MemoRAG(config, logger)
     await rag.initialize()
     return rag
-
-
-async def quick_query(query_text: str, **kwargs) -> List[Dict[str, Any]]:
-    """Quick query function for simple use cases."""
-    rag = await create_rag_system()
-    try:
-        return await rag.query(query_text, **kwargs)
-    finally:
-        await rag.close()

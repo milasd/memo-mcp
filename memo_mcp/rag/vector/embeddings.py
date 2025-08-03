@@ -1,10 +1,12 @@
+import hashlib
 import logging
 import pickle
-import hashlib
-from typing import List, Dict
-import numpy as np
+from typing import Any, cast
 
-from ..config import RAGConfig
+import numpy as np
+from numpy.typing import NDArray
+
+from memo_mcp.rag.config.rag_config import RAGConfig
 
 
 class EmbeddingManager:
@@ -19,14 +21,14 @@ class EmbeddingManager:
         self.logger = logging.getLogger(__name__)
 
         # Model and device state
-        self.model = None
-        self.tokenizer = None
-        self.device = None
+        self.model: Any = None
+        self.tokenizer: Any = None
+        self.device: str | None = None
         self.model_name = config.embedding_model
         self.embedding_dimension = config.embedding_dimension
 
         # Caching
-        self._cache: Dict[str, np.ndarray] = {}
+        self._cache: dict[str, NDArray[np.float32]] = {}
         self._cache_dirty = False
 
     def initialize(self) -> None:
@@ -79,36 +81,35 @@ class EmbeddingManager:
 
             self.model = SentenceTransformer(
                 self.model_name,
-                device=self.device
-                if self.device != "mps"
-                else "cpu",  # SentenceTransformers may not support MPS
+                device=self.device if self.device != "mps" else "cpu",
             )
 
             # Update embedding dimension from model
-            self.embedding_dimension = self.model.get_sentence_embedding_dimension()
+            if self.model:
+                self.embedding_dimension = self.model.get_sentence_embedding_dimension()
 
-        except ImportError:
+        except ImportError as e:
             raise ImportError(
                 "sentence-transformers not installed. "
                 "Install with: pip install sentence-transformers"
-            )
+            ) from e
 
     def _load_huggingface_model(self) -> None:
         """Load a HuggingFace transformers model."""
         try:
-            from transformers import AutoTokenizer, AutoModel
+            from transformers import AutoModel, AutoTokenizer
 
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
             self.model = AutoModel.from_pretrained(self.model_name)
 
-            if self.device != "cpu":
+            if self.device != "cpu" and self.model:
                 self.model = self.model.to(self.device)
 
-        except ImportError:
+        except ImportError as e:
             raise ImportError(
                 "transformers not installed. "
                 "Install with: pip install transformers torch"
-            )
+            ) from e
 
     def _load_cache(self) -> None:
         """Load embedding cache from disk."""
@@ -147,7 +148,7 @@ class EmbeddingManager:
         """Generate a cache key for text."""
         return hashlib.md5(f"{self.model_name}:{text}".encode()).hexdigest()
 
-    def embed_text(self, text: str) -> np.ndarray:
+    def embed_text(self, text: str) -> NDArray[np.float32]:
         """
         Generate embedding for a single text.
 
@@ -166,12 +167,13 @@ class EmbeddingManager:
             return self._cache[cache_key]
 
         # Generate embedding
+        embedding: NDArray[np.float32]
         if hasattr(self.model, "encode"):  # SentenceTransformer
-            embedding = self._embed_with_sentence_transformer([text])
-            embedding = embedding[0]
+            embeddings = self._embed_with_sentence_transformer([text])
+            embedding = embeddings[0]
         else:  # HuggingFace model
-            embedding = self._embed_with_huggingface([text])
-            embedding = embedding[0]
+            embeddings = self._embed_with_huggingface([text])
+            embedding = embeddings[0]
 
         # Cache the result
         if self.config.cache_embeddings:
@@ -180,7 +182,7 @@ class EmbeddingManager:
 
         return embedding
 
-    def embed_texts(self, texts: List[str]) -> List[np.ndarray]:
+    def embed_texts(self, texts: list[str]) -> list[NDArray[np.float32]]:
         """
         Generate embeddings for multiple texts efficiently.
 
@@ -194,9 +196,9 @@ class EmbeddingManager:
             return []
 
         # Separate cached and uncached texts
-        cached_embeddings = {}
-        uncached_texts = []
-        uncached_indices = []
+        cached_embeddings: dict[int, NDArray[np.float32]] = {}
+        uncached_texts: list[str] = []
+        uncached_indices: list[int] = []
 
         for i, text in enumerate(texts):
             if not text.strip():
@@ -221,35 +223,45 @@ class EmbeddingManager:
 
             # Cache new embeddings
             if self.config.cache_embeddings:
-                for text, embedding in zip(uncached_texts, new_embeddings):
+                for text, embedding in zip(
+                    uncached_texts, new_embeddings, strict=False
+                ):
                     cache_key = self._get_cache_key(text)
                     self._cache[cache_key] = embedding
                 self._cache_dirty = True
 
             # Add to results
-            for i, embedding in zip(uncached_indices, new_embeddings):
+            for i, embedding in zip(uncached_indices, new_embeddings, strict=False):
                 cached_embeddings[i] = embedding
 
         # Return in original order
         return [cached_embeddings[i] for i in range(len(texts))]
 
-    def _embed_with_sentence_transformer(self, texts: List[str]) -> List[np.ndarray]:
+    def _embed_with_sentence_transformer(
+        self, texts: list[str]
+    ) -> list[NDArray[np.float32]]:
         """Generate embeddings using SentenceTransformer."""
+        if not self.model:
+            return []
+
         embeddings = self.model.encode(
             texts,
             batch_size=self.config.batch_size,
             show_progress_bar=False,
             convert_to_numpy=True,
         )
-        return [emb.astype(np.float32) for emb in embeddings]
+        return [cast(NDArray[np.float32], emb.astype(np.float32)) for emb in embeddings]
 
-    def _embed_with_huggingface(self, texts: List[str]) -> List[np.ndarray]:
+    def _embed_with_huggingface(self, texts: list[str]) -> list[NDArray[np.float32]]:
         """Generate embeddings using HuggingFace transformers."""
         try:
             import torch
             import torch.nn.functional as F
 
-            embeddings = []
+            if not self.model or not self.tokenizer:
+                return []
+
+            embeddings: list[NDArray[np.float32]] = []
 
             # Process in batches
             for i in range(0, len(texts), self.config.batch_size):
@@ -288,8 +300,8 @@ class EmbeddingManager:
                     batch_embeddings = F.normalize(batch_embeddings, p=2, dim=1)
 
                     # Convert to numpy
-                    batch_embeddings = batch_embeddings.cpu().numpy().astype(np.float32)
-                    embeddings.extend([emb for emb in batch_embeddings])
+                    np_embeddings = batch_embeddings.cpu().numpy().astype(np.float32)
+                    embeddings.extend(np_embeddings)
 
             return embeddings
 
@@ -304,20 +316,16 @@ class EmbeddingManager:
         self._save_cache()
 
         # Clean up model resources
-        if hasattr(self, "model") and self.model is not None:
-            del self.model
-            self.model = None
-
-        if hasattr(self, "tokenizer") and self.tokenizer is not None:
-            del self.tokenizer
-            self.tokenizer = None
+        self.model = None
+        self.tokenizer = None
 
         # Clear GPU memory if using CUDA
         if self.device and "cuda" in self.device:
             try:
                 import torch
 
-                torch.cuda.empty_cache()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
             except ImportError:
                 pass
 

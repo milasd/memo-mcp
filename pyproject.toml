@@ -1,7 +1,7 @@
 [project]
 name = "memo-mcp"
-version = "0.1.0"
-description = "Memo MCP"
+version = "0.2.0"
+description = "Memo MCP: LLM journaling and past conversation context-retrieval with RAG"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -26,7 +26,64 @@ build-backend = "hatchling.build"
 dev = [
     "pytest>=8.3.5",
     "pytest-cov>=6.1.1",
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
 ]
 
 [project.scripts]
 memo-mcp = "memo_mcp:main"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.coverage.run]
+source = ["memo_mcp"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true

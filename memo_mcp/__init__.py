@@ -1,8 +1,9 @@
-from .mcp import server
 import asyncio
 
+from .mcp import server
 
-def main():
+
+def main() -> None:
     """Main entry point for the package."""
     asyncio.run(server.main())
 
