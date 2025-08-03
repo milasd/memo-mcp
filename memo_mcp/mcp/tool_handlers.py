@@ -1,11 +1,11 @@
+from datetime import date, timedelta
+from typing import Any
+
 import mcp.types as types
 
-from datetime import date, timedelta
-from memo_mcp.rag import RAGConfig, create_rag_system, MemoRAG
-from memo_mcp.utils.logging_setup import set_logger
 from memo_mcp.config import DATA_DIR, TOP_K
-from typing import Optional
-
+from memo_mcp.rag import MemoRAG, RAGConfig, create_rag_system
+from memo_mcp.utils.logging_setup import set_logger
 
 """
 MCP tool handlers for memo operations.
@@ -15,10 +15,10 @@ keeping the server.py focused on protocol handling.
 """
 
 # Global RAG system instance
-_rag_system: Optional[MemoRAG] = None
+_rag_system: MemoRAG | None
 
 
-def parse_date_filter_string(date_filter_str: str):
+def parse_date_filter_string(date_filter_str: str) -> tuple | None:
     """Convert string date filter to date range tuple."""
     if not date_filter_str:
         return None
@@ -67,7 +67,7 @@ async def get_rag_system() -> MemoRAG:
         _rag_system = await create_rag_system(config, logger)
 
         # Ensure index is built
-        stats = _rag_system.get_stats()
+        stats = await _rag_system.get_stats()
         if stats["total_documents"] == 0:
             logger.info("Building RAG index...")
             await _rag_system.build_index()
@@ -77,7 +77,7 @@ async def get_rag_system() -> MemoRAG:
     return _rag_system
 
 
-async def cleanup_rag_system():
+async def cleanup_rag_system() -> None:
     """Clean up the RAG system on shutdown."""
     global _rag_system
     if _rag_system:
@@ -101,8 +101,8 @@ async def handle_add_memo(arguments: dict | None) -> list[types.TextContent]:
             # Parse the provided date
             year, month, day = entry_date.split("-")
             parsed_date = date(int(year), int(month), int(day))
-        except (ValueError, TypeError):
-            raise ValueError("Invalid date format. Use YYYY-MM-DD format.")
+        except (ValueError, TypeError) as e:
+            raise ValueError("Invalid date format. Use YYYY-MM-DD format.") from e
     else:
         # Use today's date
         parsed_date = date.today()
@@ -155,9 +155,9 @@ async def handle_search_journal(arguments: dict | None) -> list[types.TextConten
     if not query:
         raise ValueError("Missing query parameter")
 
-    top_k = arguments.get("top_k", TOP_K)
-    date_filter_str = arguments.get("date_filter")
-    date_filter = parse_date_filter_string(date_filter_str)
+    top_k: int = arguments.get("top_k", TOP_K)
+    date_filter_str: str | None = arguments.get("date_filter")
+    date_filter = parse_date_filter_string(date_filter_str) if date_filter_str else None
 
     # Get RAG system
     rag = await get_rag_system()
@@ -207,8 +207,8 @@ async def handle_search_journal(arguments: dict | None) -> list[types.TextConten
 async def handle_get_journal_stats(arguments: dict | None) -> list[types.TextContent]:
     """Handle the get-journal-stats tool."""
     try:
-        rag = await get_rag_system()
-        stats = rag.get_stats()
+        rag: MemoRAG = await get_rag_system()
+        stats: dict[str, Any] = await rag.get_stats()
 
         response_text = f"""
 Memo Data Stats:

@@ -7,6 +7,9 @@ import numpy as np
 from memo_mcp.rag.config.rag_config import DocumentMetadata, RAGConfig
 from memo_mcp.rag.vector.database.vector_backend import VectorDatabase
 
+# Error message constant
+_INDEX_NOT_INITIALIZED_ERROR = "FAISS index not initialized. Call initialize() first."
+
 
 class FAISSBackend(VectorDatabase):
     """FAISS-based vector store backend for high performance similarity search."""
@@ -14,7 +17,7 @@ class FAISSBackend(VectorDatabase):
     def __init__(self, config: RAGConfig):
         super().__init__(config)
 
-        self.index = None
+        self.index: Any | None = None  # faiss.Index
         self.texts: list[str] = []
         self.metadatas: list[DocumentMetadata] = []
         self.dimension = config.embedding_dimension
@@ -106,6 +109,8 @@ class FAISSBackend(VectorDatabase):
         ids = np.array(range(start_id, start_id + len(embeddings)), dtype=np.int64)
 
         # Add to index
+        if self.index is None:
+            raise RuntimeError(_INDEX_NOT_INITIALIZED_ERROR)
         self.index.add_with_ids(embeddings_array, ids)
 
         # Store texts and metadata
@@ -117,10 +122,13 @@ class FAISSBackend(VectorDatabase):
 
         self.logger.debug(f"Added {len(embeddings)} documents to FAISS index")
 
-    def search(
+    async def search(
         self, query_embedding: np.ndarray, top_k: int, similarity_threshold: float = 0.0
     ) -> list[dict[str, Any]]:
         """Search for similar documents in FAISS index."""
+        if self.index is None:
+            raise RuntimeError(_INDEX_NOT_INITIALIZED_ERROR)
+
         if self.index.ntotal == 0:
             return []
 
@@ -187,16 +195,16 @@ class FAISSBackend(VectorDatabase):
 
         return True
 
-    def get_document_count(self) -> int:
+    async def get_document_count(self) -> int:
         """Get number of unique documents."""
-        unique_files = set(meta.file_path for meta in self.metadatas)
+        unique_files = {meta.file_path for meta in self.metadatas}
         return len(unique_files)
 
-    def get_chunk_count(self) -> int:
+    async def get_chunk_count(self) -> int:
         """Get total number of chunks."""
         return len(self.texts)
 
-    def is_empty(self) -> bool:
+    async def is_empty(self) -> bool:
         """Check if index is empty."""
         return self.index is None or self.index.ntotal == 0
 

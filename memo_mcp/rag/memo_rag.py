@@ -89,9 +89,9 @@ class MemoRAG:
     async def query(
         self,
         query_text: str,
-        top_k: int = None,
+        top_k: int | None = None,
         date_filter: tuple[date, date] | None = None,
-        similarity_threshold: float = None,
+        similarity_threshold: float | None = None,
     ) -> list[dict[str, Any]]:
         """
         Query the RAG system for relevant documents.
@@ -189,11 +189,11 @@ class MemoRAG:
             self.logger.error(f"Failed to remove document {file_path}: {e}")
             raise
 
-    def get_stats(self) -> dict[str, Any]:
+    async def get_stats(self) -> dict[str, Any]:
         """Get statistics about the RAG system."""
         # Ensure system is initialized
         if not self._initialized:
-            self.initialize()
+            await self.initialize()
 
         return {
             "total_documents": self.vector_store.get_document_count(),
@@ -251,12 +251,3 @@ async def create_rag_system(
     rag = MemoRAG(config, logger)
     await rag.initialize()
     return rag
-
-
-async def quick_query(query_text: str, **kwargs) -> list[dict[str, Any]]:
-    """Quick query function for simple use cases."""
-    rag = await create_rag_system()
-    try:
-        return await rag.query(query_text, **kwargs)
-    finally:
-        await rag.close()

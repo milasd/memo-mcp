@@ -1,7 +1,7 @@
 from .config.rag_config import DocumentMetadata, RAGConfig, load_config_from_env
-from .document.indexer import DocumentIndexer, FileWatcher, TextProcessor
+from .document.indexer import DocumentIndexer, TextProcessor
 from .document.retriever import DocumentRetriever, QueryExpander, ResultAggregator
-from .memo_rag import MemoRAG, create_rag_system, quick_query
+from .memo_rag import MemoRAG, create_rag_system
 from .vector.embeddings import EmbeddingManager
 from .vector.vector_store import VectorStore
 
@@ -23,7 +23,6 @@ __all__ = [
     "FileWatcher",
     # Convenience functions
     "create_rag_system",
-    "quick_query",
     "load_config_from_env",
 ]
 
@@ -32,4 +31,4 @@ SUPPORTED_FORMATS = [".md", ".txt"]
 SUPPORTED_EMBEDDINGS = [
     "sentence-transformers/all-MiniLM-L6-v2",
 ]
-SUPPORTED_VECTOR_STORES = ["faiss", "chroma", "qdrant", "simple"]
+SUPPORTED_VECTOR_STORES = ["faiss", "chroma", "simple"]

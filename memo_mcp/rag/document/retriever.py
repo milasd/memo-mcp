@@ -227,11 +227,11 @@ class DocumentRetriever:
             "me",
         }
 
-        query_words = set(
+        query_words = {
             word.lower()
             for word in re.findall(r"\b\w+\b", query)
             if word.lower() not in stop_words and len(word) > 2
-        )
+        }
 
         if not query_words:
             return 0.0
@@ -368,7 +368,7 @@ class DocumentRetriever:
         # Simple extractive summary - take first sentence or two
         sentences = re.split(r"[.!?]+", text)
 
-        summary_parts = []
+        summary_parts: list[str] = []
         char_count = 0
         max_chars = 200
 
@@ -433,7 +433,7 @@ class ResultAggregator:
     @staticmethod
     def merge_results(
         semantic_results: list[dict[str, Any]],
-        keyword_results: list[dict[str, Any]] = None,
+        keyword_results: list[dict[str, Any]] | None,
         top_k: int = 10,
     ) -> list[dict[str, Any]]:
         """Merge results from different search strategies."""

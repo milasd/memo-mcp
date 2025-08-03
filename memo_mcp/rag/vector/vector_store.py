@@ -17,22 +17,23 @@ class VectorStore:
     def __init__(self, config: RAGConfig):
         self.config = config
         self.logger = logging.getLogger(__name__)
-        self.backend: FAISSBackend | ChromaBackend | QdrantBackend | SimpleBackend = (
-            None
-        )
 
+        # from memo_mcp.rag.vector.database.qdrant import QdrantBackend
         from memo_mcp.rag.vector.database.chromadb import ChromaBackend
         from memo_mcp.rag.vector.database.faiss import FAISSBackend
-        from memo_mcp.rag.vector.database.qdrant import QdrantBackend
         from memo_mcp.rag.vector.database.simple import SimpleBackend
+
+        self.backend: FAISSBackend | ChromaBackend | SimpleBackend = (
+            None
+        )
 
         backend_type = config.vector_store_type.lower()
         if backend_type == "faiss":
             self.backend = FAISSBackend(config)
         elif backend_type == "chroma":
             self.backend = ChromaBackend(config)
-        elif backend_type == "qdrant":
-            self.backend = QdrantBackend(config)
+        # elif backend_type == "qdrant":
+        #     self.backend = QdrantBackend(config)
         else:
             self.backend = SimpleBackend(config)
 

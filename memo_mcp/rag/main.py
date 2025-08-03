@@ -1,8 +1,8 @@
 import asyncio
+from pathlib import Path
 
 from memo_mcp.rag import RAGConfig, create_rag_system
 from memo_mcp.utils.logging_setup import set_logger
-from pathlib import Path
 
 # os.environ["TOKENIZERS_PARALLELISM"] = "false"
 # os.environ["OMP_NUM_THREADS"] = "1"
@@ -13,9 +13,10 @@ from pathlib import Path
 """Sample script to run RAG system locally without MCP."""
 
 SAMPLE_DATA_DIR = Path("data/memo_example")
-VECTOR_DB = "chroma" # you can try "faiss", "chroma", "simple". in the future, will support "qdrant"
+VECTOR_DB = "chroma"  # you can try "faiss", "chroma", "simple". in the future, will support "qdrant"
 
-async def run_rag():
+
+async def run_rag() -> None:
     config = RAGConfig(
         vector_store_type=VECTOR_DB,
         data_root=SAMPLE_DATA_DIR,
@@ -26,7 +27,7 @@ async def run_rag():
     logger = set_logger()
     rag = await create_rag_system(config, logger)
     try:
-        stats = rag.get_stats()
+        stats = await rag.get_stats()
 
         if stats["total_documents"] == 0:
             rag.logger.info("Building index for the first time...")

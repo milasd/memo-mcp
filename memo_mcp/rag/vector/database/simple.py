@@ -125,7 +125,7 @@ class SimpleBackend(VectorDatabase):
 
     def get_document_count(self) -> int:
         """Get number of unique documents."""
-        unique_files = set(meta.file_path for meta in self.metadatas)
+        unique_files = {meta.file_path for meta in self.metadatas}
         return len(unique_files)
 
     def get_chunk_count(self) -> int:

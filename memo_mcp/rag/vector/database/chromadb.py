@@ -1,9 +1,13 @@
 from typing import Any
 
 import numpy as np
+from chromadb import Collection, PersistentClient
 
 from memo_mcp.rag.config.rag_config import DocumentMetadata, RAGConfig
 from memo_mcp.rag.vector.database.vector_backend import VectorDatabase
+
+# Error message constant
+_CLIENT_NOT_INITIALIZED_ERROR = "ChromaDB client not initialized. Call initialize() first."
 
 
 class ChromaBackend(VectorDatabase):
@@ -11,18 +15,18 @@ class ChromaBackend(VectorDatabase):
 
     def __init__(self, config: RAGConfig):
         super().__init__(config)
-        self.client = None
-        self.collection = None
+        self.client: PersistentClient | None = None
+        self.collection: Collection | None = None
 
     async def initialize(self) -> None:
         """Initialize ChromaDB."""
         try:
             import chromadb
             from chromadb.config import Settings
-        except ImportError:
+        except ImportError as e:
             raise ImportError(
                 "ChromaDB not installed. Install with: pip install chromadb"
-            )
+            ) from e
 
         # Initialize client
         self.client = chromadb.PersistentClient(
@@ -66,6 +70,9 @@ class ChromaBackend(VectorDatabase):
 
         # Generate IDs
         ids = [f"{meta.file_path}_{meta.chunk_index}" for meta in metadatas]
+
+        if self.client is None:
+            raise RuntimeError(_CLIENT_NOT_INITIALIZED_ERROR)
 
         # Add to collection
         self.collection.add(
@@ -147,7 +154,7 @@ class ChromaBackend(VectorDatabase):
         if not all_results["metadatas"]:
             return 0
 
-        unique_files = set(meta["file_path"] for meta in all_results["metadatas"])
+        unique_files = {meta["file_path"] for meta in all_results["metadatas"]}
         return len(unique_files)
 
     def get_chunk_count(self) -> int:
@@ -160,6 +167,9 @@ class ChromaBackend(VectorDatabase):
 
     async def clear(self) -> None:
         """Clear all data."""
+        if self.client is None:
+            raise RuntimeError(_CLIENT_NOT_INITIALIZED_ERROR)
+
         self.client.delete_collection("memo_documents")
         self.collection = self.client.create_collection(
             name="memo_documents", metadata={"hnsw:space": "cosine"}

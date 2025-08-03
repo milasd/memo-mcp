@@ -15,7 +15,7 @@ from memo_mcp.mcp.tool_handlers import (
 
 notes: dict[str, str] = {}
 
-server = Server("memo-mcp")
+server: Server = Server("memo-mcp")
 
 
 @server.list_resources()
@@ -183,7 +183,7 @@ async def handle_list_tools() -> list[types.Tool]:
 @server.call_tool()
 async def handle_call_tool(
     name: str, arguments: dict | None
-) -> list[types.TextContent | types.ImageContent | types.EmbeddedResource]:
+) -> list[types.TextContent]:
     """
     Handle tool execution requests.
     Tools can modify server state and notify clients of changes.
@@ -209,7 +209,7 @@ async def handle_call_tool(
         ]
 
 
-async def main():
+async def main() -> None:
     """Main server function with proper resource cleanup."""
     try:
         # Run the server using stdin/stdout streams

@@ -1,13 +1,13 @@
 import logging
 import os
-
 from dataclasses import dataclass, field
 from datetime import datetime
-from memo_mcp.config import DATA_DIR, TOP_K
 from pathlib import Path
 
+from memo_mcp.config import DATA_DIR, TOP_K
 
 INDEX_DIR = Path("index")
+
 
 @dataclass
 class RAGConfig:
@@ -55,7 +55,7 @@ class RAGConfig:
     # Logging
     log_level: int = logging.INFO
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Post-initialization setup."""
         # Ensure paths are Path objects
         self.data_root = Path(self.data_root)
@@ -70,7 +70,7 @@ class RAGConfig:
         self.device = self.get_device_preference()
         print(self.device)
 
-    def _adjust_for_environment(self):
+    def _adjust_for_environment(self) -> None:
         """Adjust configuration based on available resources."""
         # Check if we're in a resource-constrained environment
         if os.getenv("MEMO_RAG_LITE", "false").lower() == "true":
