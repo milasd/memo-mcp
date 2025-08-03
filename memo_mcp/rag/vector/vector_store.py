@@ -23,9 +23,7 @@ class VectorStore:
         from memo_mcp.rag.vector.database.faiss import FAISSBackend
         from memo_mcp.rag.vector.database.simple import SimpleBackend
 
-        self.backend: FAISSBackend | ChromaBackend | SimpleBackend = (
-            None
-        )
+        self.backend: FAISSBackend | ChromaBackend | SimpleBackend
 
         backend_type = config.vector_store_type.lower()
         if backend_type == "faiss":

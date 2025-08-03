@@ -96,7 +96,7 @@ class VectorDatabase(ABC):
         """Close the vector store and cleanup resources."""
         pass
 
-    async def health_check(self) -> dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """
         Perform a health check of the backend.
         Default implementation provides basic status.

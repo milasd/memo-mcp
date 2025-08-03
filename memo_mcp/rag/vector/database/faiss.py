@@ -122,7 +122,7 @@ class FAISSBackend(VectorDatabase):
 
         self.logger.debug(f"Added {len(embeddings)} documents to FAISS index")
 
-    async def search(
+    def search(
         self, query_embedding: np.ndarray, top_k: int, similarity_threshold: float = 0.0
     ) -> list[dict[str, Any]]:
         """Search for similar documents in FAISS index."""
@@ -195,16 +195,16 @@ class FAISSBackend(VectorDatabase):
 
         return True
 
-    async def get_document_count(self) -> int:
+    def get_document_count(self) -> int:
         """Get number of unique documents."""
         unique_files = {meta.file_path for meta in self.metadatas}
         return len(unique_files)
 
-    async def get_chunk_count(self) -> int:
+    def get_chunk_count(self) -> int:
         """Get total number of chunks."""
         return len(self.texts)
 
-    async def is_empty(self) -> bool:
+    def is_empty(self) -> bool:
         """Check if index is empty."""
         return self.index is None or self.index.ntotal == 0
 

@@ -205,7 +205,7 @@ class MemoRAG:
             "chunk_overlap": self.config.chunk_overlap,
         }
 
-    async def health_check(self) -> dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Perform a health check of the RAG system."""
         try:
             if not self._initialized:
