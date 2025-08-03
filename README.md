@@ -13,10 +13,9 @@ For privacy and safety, I recommend personal journaling with not-so-sensitive da
 - [Memo Data](#memo-data)
 - [MCP](#mcp)
 - [RAG](#rag)
-- [Architecture](#️-architecture)
-- [Code Usage Examples](#code-usage-examples)
+- [Architecture](#️architecture)
+- [CLI Usage](#cli-usage)
 - [Development](#development)
-- [Troubleshooting](#troubleshooting)
 - [License](#license)
 
 
@@ -262,28 +261,22 @@ config = RAGConfig(
 
 [TODO: a comprehensible diagram showing how the RAG provides the "logic" for the retrieval, using the MCP as an interface to connect it as tools for the LLMs.]
 
-## Development
 
-To run the development tasks, use the following commands:
+## CLI Usage
 
-- `task format`: Format the code
-- `task check`: Run static analysis checks
-- `task test`: Run tests
-- `task all`: Run all checks and tests
-
-## Codebase Usage Examples
-
-If you want to experiment with the RAG and MCP without the aid of LLM plugins, you can try writing scripts to run the implementations.
+If you want to experiment with the RAG and MCP without the aid of LLM plugins, you can try writing scripts to run the implementations or run the demos via CLI.
 
 Examples:
 
-### RAG Usage (Python)
+### RAG (Python Demo)
 
-Try running the RAG demo ():
+Try running the demo (`memo_mcp/rag/main.py`) to run journaling retrieval in your CLI:
 
 ```bash
 task rag
 ```
+
+or try writing a simple script such as:
 
 ```python
 from memo_mcp.rag import create_rag_system, RAGConfig
@@ -305,21 +298,42 @@ await rag.close()
 
 ### MCP Client Usage
 
-```python
-# With an MCP client library
-import mcp
+You can try running the MCP local server in your CLI:
 
-client = mcp.Client()
-await client.connect_to_server("memo-mcp")
+```bash
+uv run memo-mcp
+```
+or
+```
+task server
+```
 
-# Search journal
-result = await client.call_tool("search-journal", {
-    "query": "How did I handle stress this year?",
-    "top_k": 5,
-    "date_filter": "2025"
-})
+## Development
 
-print(result.content[0].text)
+To run the development tasks, use the following commands:
+
+```bash
+task list
+
+task: Available tasks for this project:
+* check:                   Run code quality checks
+* clean:                   Clean up generated files
+* format:                  Format code using ruff
+* install-dev:             Install development dependencies
+* rag:                     Run the RAG demo script (memo_mcp/rag/main.py)
+* server:                  Run the MCP server in the CLI
+* test:                    Run tests with pytest
+* test-cov:                Run tests with coverage report
+* test-data:               Test data structure validation
+* test-data-summary:       Show data structure summary
+```
+
+Make sure to always run `check`, `format` and `test`.
+
+```bash
+task format
+task check
+task test
 ```
 
 ## License
