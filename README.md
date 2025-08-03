@@ -1,6 +1,6 @@
 # Memo MCP: LLM journaling w/ RAG
 
-Memo MCP is a local Model Context Protocol (MCP) server that provides flexible search capabilities over personal memo and journal entries using Retrieval-Augmented Generation (RAG) with indexing and GPU support for faster embeddings.
+Memo MCP is a local Model Context Protocol (MCP) server that provides flexible search capabilities over personal memo and journal entries using Retrieval-Augmented Generation (RAG) with indexing and GPU support for faster embeddings. Retrieve past context for new conversations anytime.
 
 With Memo MCP, you can ask about past events from your journal entries (e.g. How has my mood changed in the past 3 months?), and the LLM can also be aware of past discussed events and point it without being asked if it judges appropriate to the current discussion. You can also add new entries automatically about the current day.
 
