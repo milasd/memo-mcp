@@ -42,7 +42,7 @@ class VectorDatabase(ABC):
         pass
 
     @abstractmethod
-    async def search(
+    def search(
         self, query_embedding: np.ndarray, top_k: int, similarity_threshold: float = 0.0
     ) -> list[dict[str, Any]]:
         """
@@ -72,17 +72,17 @@ class VectorDatabase(ABC):
         pass
 
     @abstractmethod
-    async def get_document_count(self) -> int:
+    def get_document_count(self) -> int:
         """Get the number of unique documents in the store."""
         pass
 
     @abstractmethod
-    async def get_chunk_count(self) -> int:
+    def get_chunk_count(self) -> int:
         """Get the total number of chunks in the store."""
         pass
 
     @abstractmethod
-    async def is_empty(self) -> bool:
+    def is_empty(self) -> bool:
         """Check if the vector store is empty."""
         pass
 

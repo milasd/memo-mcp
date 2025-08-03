@@ -83,7 +83,7 @@ class SimpleBackend(VectorDatabase):
             # Cosine similarity
             dot_product = np.dot(query_embedding, emb)
             norm_product = np.linalg.norm(query_embedding) * np.linalg.norm(emb)
-            similarity = dot_product / max(norm_product, 1e-8)
+            similarity = dot_product / max(float(norm_product), 1e-8)
             similarities.append((similarity, i))
 
         # Sort by similarity
