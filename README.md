@@ -120,7 +120,7 @@ The Memo MCP server connects theprovides these tools for LLM interaction:
 
 1. **`search-journal`**: Search through journal entries
    - `query` (required): Your search question
-   - `top_k` (optional): Number of results (1-20, default: 5)
+   - `top_k` (optional): Number of results (1-365, default: 365)
    - `date_filter` (optional): Filter by date (e.g., "2025", "2025-01")
 
 2. **`get-journal-stats`**: Get memo dataset stats
