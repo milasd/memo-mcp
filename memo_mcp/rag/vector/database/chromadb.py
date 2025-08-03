@@ -11,7 +11,9 @@ from memo_mcp.rag.config.rag_config import DocumentMetadata, RAGConfig
 from memo_mcp.rag.vector.database.vector_backend import VectorDatabase
 
 # Error message constant
-_CLIENT_NOT_INITIALIZED_ERROR = "ChromaDB client not initialized. Call initialize() first."
+_CLIENT_NOT_INITIALIZED_ERROR = (
+    "ChromaDB client not initialized. Call initialize() first."
+)
 
 
 class ChromaBackend(VectorDatabase):
@@ -61,7 +63,7 @@ class ChromaBackend(VectorDatabase):
         # Convert metadata to dict format
         metadatas_dict: list[Mapping[str, str | int | float | bool | None]] = []
         for meta in metadatas:
-            meta_dict: Mapping[str, str | int | float | bool ] = {
+            meta_dict: Mapping[str, str | int | float | bool] = {
                 "file_path": meta.file_path,
                 "file_name": meta.file_name,
                 "date_created": meta.date_created,
@@ -101,12 +103,17 @@ class ChromaBackend(VectorDatabase):
         )
 
         formatted_results = []
-        if results and results["documents"] and results["metadatas"] and results["distances"]:
+        if (
+            results
+            and results["documents"]
+            and results["metadatas"]
+            and results["distances"]
+        ):
             for doc, metadata, distance in zip(
                 results["documents"][0],
                 results["metadatas"][0],
                 results["distances"][0],
-                strict=False
+                strict=False,
             ):
                 if metadata is None or distance is None:
                     continue  # type: ignore[unreachable]
@@ -119,14 +126,14 @@ class ChromaBackend(VectorDatabase):
 
                 # Reconstruct DocumentMetadata
                 doc_metadata = DocumentMetadata(
-                    file_path=metadata.get("file_path", ""), # type: ignore
-                    file_name=metadata.get("file_name", ""), # type: ignore
-                    date_created=metadata.get("date_created", ""), # type: ignore
-                    date_modified=metadata.get("date_modified", ""), # type: ignore
-                    file_size=metadata.get("file_size", 0), # type: ignore
-                    chunk_index=metadata.get("chunk_index", 0), # type: ignore
-                    total_chunks=metadata.get("total_chunks", 0), # type: ignore
-                    content_preview=metadata.get("content_preview", ""), # type: ignore
+                    file_path=metadata.get("file_path", ""),  # type: ignore
+                    file_name=metadata.get("file_name", ""),  # type: ignore
+                    date_created=metadata.get("date_created", ""),  # type: ignore
+                    date_modified=metadata.get("date_modified", ""),  # type: ignore
+                    file_size=metadata.get("file_size", 0),  # type: ignore
+                    chunk_index=metadata.get("chunk_index", 0),  # type: ignore
+                    total_chunks=metadata.get("total_chunks", 0),  # type: ignore
+                    content_preview=metadata.get("content_preview", ""),  # type: ignore
                 )
 
                 formatted_results.append(
@@ -165,7 +172,9 @@ class ChromaBackend(VectorDatabase):
             return 0
 
         unique_files = {
-            meta["file_path"] for meta in all_results["metadatas"] if meta and "file_path" in meta
+            meta["file_path"]
+            for meta in all_results["metadatas"]
+            if meta and "file_path" in meta
         }
         return len(unique_files)
 

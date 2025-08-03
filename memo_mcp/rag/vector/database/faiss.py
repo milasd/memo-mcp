@@ -1,4 +1,5 @@
 import pickle
+import threading
 from typing import Any
 
 import faiss
@@ -21,6 +22,7 @@ class FAISSBackend(VectorDatabase):
         self.texts: list[str] = []
         self.metadatas: list[DocumentMetadata] = []
         self.dimension = config.embedding_dimension
+        self._lock = threading.RLock()  # Thread safety for FAISS operations
 
         # File paths
         self.index_path = config.vector_store_path / "faiss_index"
@@ -41,53 +43,65 @@ class FAISSBackend(VectorDatabase):
 
     async def _create_new_index(self) -> None:
         """Create a new FAISS index."""
-        # Use IndexFlatIP for cosine similarity (after L2 normalization)
-        self.index = faiss.IndexFlatIP(self.dimension)
+        with self._lock:
+            # Use IndexFlatIP for cosine similarity (after L2 normalization)
+            base_index = faiss.IndexFlatIP(self.dimension)
 
-        # Optionally wrap with IDMap for document tracking
-        self.index = faiss.IndexIDMap(self.index)
+            # Wrap with IDMap for document tracking
+            self.index = faiss.IndexIDMap(base_index)
 
-        self.texts = []
-        self.metadatas = []
+            # Set single thread mode to avoid segfaults
+            faiss.omp_set_num_threads(1)
+
+            self.texts = []
+            self.metadatas = []
 
     async def _load_index(self) -> None:
         """Load existing FAISS index and metadata."""
-        try:
-            # Load FAISS index
-            self.index = faiss.read_index(str(self.index_path))
+        with self._lock:
+            try:
+                # Set single thread mode to avoid segfaults
+                faiss.omp_set_num_threads(1)
 
-            # Load metadata
-            if self.metadata_path.exists():
-                with open(self.metadata_path, "rb") as f:
-                    self.metadatas = pickle.load(f)
+                # Load FAISS index
+                self.index = faiss.read_index(str(self.index_path))
 
-            # Load texts
-            if self.texts_path.exists():
-                with open(self.texts_path, "rb") as f:
-                    self.texts = pickle.load(f)
+                # Load metadata
+                if self.metadata_path.exists():
+                    with open(self.metadata_path, "rb") as f:
+                        self.metadatas = pickle.load(f)
 
-            self.logger.info("Loaded existing FAISS index")
+                # Load texts
+                if self.texts_path.exists():
+                    with open(self.texts_path, "rb") as f:
+                        self.texts = pickle.load(f)
 
-        except Exception as e:
-            self.logger.warning(f"Failed to load existing index: {e}")
-            await self._create_new_index()
+                self.logger.info("Loaded existing FAISS index")
+
+            except Exception as e:
+                self.logger.warning(f"Failed to load existing index: {e}")
+                await self._create_new_index()
 
     async def _save_index(self) -> None:
         """Save FAISS index and metadata to disk."""
-        try:
-            # Save FAISS index
-            faiss.write_index(self.index, str(self.index_path))
+        with self._lock:
+            try:
+                if self.index is None:
+                    return
 
-            # Save metadata
-            with open(self.metadata_path, "wb") as f:
-                pickle.dump(self.metadatas, f)
+                # Save FAISS index
+                faiss.write_index(self.index, str(self.index_path))
 
-            # Save texts
-            with open(self.texts_path, "wb") as f:
-                pickle.dump(self.texts, f)
+                # Save metadata
+                with open(self.metadata_path, "wb") as f:
+                    pickle.dump(self.metadatas, f)
 
-        except Exception as e:
-            self.logger.error(f"Failed to save FAISS index: {e}")
+                # Save texts
+                with open(self.texts_path, "wb") as f:
+                    pickle.dump(self.texts, f)
+
+            except Exception as e:
+                self.logger.error(f"Failed to save FAISS index: {e}")
 
     async def add_documents(
         self,
@@ -99,67 +113,69 @@ class FAISSBackend(VectorDatabase):
         if not embeddings:
             return
 
-        # Normalize embeddings for cosine similarity
-        embeddings_array = np.vstack(embeddings).astype(np.float32)
-        norms = np.linalg.norm(embeddings_array, axis=1, keepdims=True)
-        embeddings_array = embeddings_array / np.maximum(norms, 1e-8)
+        with self._lock:
+            # Normalize embeddings for cosine similarity
+            embeddings_array = np.vstack(embeddings).astype(np.float32)
+            norms = np.linalg.norm(embeddings_array, axis=1, keepdims=True)
+            embeddings_array = embeddings_array / np.maximum(norms, 1e-8)
 
-        # Generate IDs for new documents
-        start_id = len(self.texts)
-        ids = np.array(range(start_id, start_id + len(embeddings)), dtype=np.int64)
+            # Generate IDs for new documents
+            start_id = len(self.texts)
+            ids = np.array(range(start_id, start_id + len(embeddings)), dtype=np.int64)
 
-        # Add to index
-        if self.index is None:
-            raise RuntimeError(_INDEX_NOT_INITIALIZED_ERROR)
-        self.index.add_with_ids(embeddings_array, ids)
+            # Add to index
+            if self.index is None:
+                raise RuntimeError(_INDEX_NOT_INITIALIZED_ERROR)
+            self.index.add_with_ids(embeddings_array, ids)
 
-        # Store texts and metadata
-        self.texts.extend(texts)
-        self.metadatas.extend(metadatas)
+            # Store texts and metadata
+            self.texts.extend(texts)
+            self.metadatas.extend(metadatas)
 
-        # Save to disk
-        await self._save_index()
+            # Save to disk
+            await self._save_index()
 
-        self.logger.debug(f"Added {len(embeddings)} documents to FAISS index")
+            self.logger.debug(f"Added {len(embeddings)} documents to FAISS index")
 
     def search(
         self, query_embedding: np.ndarray, top_k: int, similarity_threshold: float = 0.0
     ) -> list[dict[str, Any]]:
         """Search for similar documents in FAISS index."""
-        if self.index is None:
-            raise RuntimeError(_INDEX_NOT_INITIALIZED_ERROR)
+        with self._lock:
+            if self.index is None:
+                raise RuntimeError(_INDEX_NOT_INITIALIZED_ERROR)
 
-        if self.index.ntotal == 0:
-            return []
+            if self.index.ntotal == 0:
+                return []
 
-        # Normalize query embedding
-        query_embedding = query_embedding.astype(np.float32).reshape(1, -1)
-        norm = np.linalg.norm(query_embedding)
-        if norm > 0:
-            query_embedding = query_embedding / norm
+            # Normalize query embedding
+            query_embedding = query_embedding.astype(np.float32).reshape(1, -1)
+            norm = np.linalg.norm(query_embedding)
+            if norm > 0:
+                query_embedding = query_embedding / norm
 
-        # Search
-        scores, indices = self.index.search(
-            query_embedding, min(top_k, self.index.ntotal)
-        )
-
-        results = []
-        for score, idx in zip(scores[0], indices[0], strict=False):
-            if idx == -1:  # FAISS returns -1 for empty slots
-                continue
-
-            if score < similarity_threshold:
-                continue
-
-            results.append(
-                {
-                    "text": self.texts[idx],
-                    "metadata": self.metadatas[idx],
-                    "similarity_score": float(score),
-                }
+            # Search
+            scores, indices = self.index.search(
+                query_embedding, min(top_k, self.index.ntotal)
             )
 
-        return results
+            results = []
+            for score, idx in zip(scores[0], indices[0], strict=False):
+                if idx == -1:  # FAISS returns -1 for empty slots
+                    continue
+
+                if score < similarity_threshold:
+                    continue
+
+                results.append(
+                    {
+                        "text": self.texts[idx],
+                        "metadata": self.metadatas[idx],
+                        "similarity_score": float(score),
+                    }
+                )
+
+            return results
 
     async def remove_document(self, file_path: str) -> bool:
         """Remove document from FAISS index."""
@@ -215,14 +231,16 @@ class FAISSBackend(VectorDatabase):
 
     async def close(self) -> None:
         """Close FAISS backend."""
-        if self.index is not None:
-            await self._save_index()
-            # Clean up FAISS resources
-            self.index = None
-            self.texts.clear()
-            self.metadatas.clear()
+        with self._lock:
+            if self.index is not None:
+                await self._save_index()
+                # Clean up FAISS resources properly
+                del self.index
+                self.index = None
+                self.texts.clear()
+                self.metadatas.clear()
 
-        # Force garbage collection to clean up any remaining resources
-        import gc
+            # Force garbage collection to clean up any remaining resources
+            import gc
 
-        gc.collect()
+            gc.collect()

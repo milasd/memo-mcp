@@ -86,9 +86,7 @@ class EmbeddingManager:
 
             # Update embedding dimension from model
             if self.model:
-                self.embedding_dimension = (
-                    self.model.get_sentence_embedding_dimension()
-                )
+                self.embedding_dimension = self.model.get_sentence_embedding_dimension()
 
         except ImportError as e:
             raise ImportError(
@@ -254,9 +252,7 @@ class EmbeddingManager:
         )
         return [cast(NDArray[np.float32], emb.astype(np.float32)) for emb in embeddings]
 
-    def _embed_with_huggingface(
-        self, texts: list[str]
-    ) -> list[NDArray[np.float32]]:
+    def _embed_with_huggingface(self, texts: list[str]) -> list[NDArray[np.float32]]:
         """Generate embeddings using HuggingFace transformers."""
         try:
             import torch
@@ -304,9 +300,7 @@ class EmbeddingManager:
                     batch_embeddings = F.normalize(batch_embeddings, p=2, dim=1)
 
                     # Convert to numpy
-                    np_embeddings = (
-                        batch_embeddings.cpu().numpy().astype(np.float32)
-                    )
+                    np_embeddings = batch_embeddings.cpu().numpy().astype(np.float32)
                     embeddings.extend(np_embeddings)
 
             return embeddings

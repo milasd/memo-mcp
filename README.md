@@ -35,6 +35,7 @@ For privacy and safety, I recommend personal journaling with not-so-sensitive da
 
 - Python 3.12+
 - [uv](https://docs.astral.sh/uv/) package manager
+- [Task](https://taskfile.dev/installation/) for running development tasks
 
 
 1. Clone repository and install dependencies with uv:
@@ -261,6 +262,15 @@ config = RAGConfig(
 
 [TODO: a comprehensible diagram showing how the RAG provides the "logic" for the retrieval, using the MCP as an interface to connect it as tools for the LLMs.]
 
+## Development
+
+To run the development tasks, use the following commands:
+
+- `task format`: Format the code
+- `task check`: Run static analysis checks
+- `task test`: Run tests
+- `task all`: Run all checks and tests
+
 ## Codebase Usage Examples
 
 If you want to experiment with the RAG and MCP without the aid of LLM plugins, you can try writing scripts to run the implementations.
@@ -268,6 +278,12 @@ If you want to experiment with the RAG and MCP without the aid of LLM plugins, y
 Examples:
 
 ### RAG Usage (Python)
+
+Try running the RAG demo ():
+
+```bash
+task rag
+```
 
 ```python
 from memo_mcp.rag import create_rag_system, RAGConfig
