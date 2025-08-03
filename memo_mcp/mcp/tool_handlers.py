@@ -15,7 +15,7 @@ keeping the server.py focused on protocol handling.
 """
 
 # Global RAG system instance
-_rag_system: MemoRAG | None
+_rag_system: MemoRAG | None = None
 
 
 def parse_date_filter_string(date_filter_str: str) -> tuple | None:
